@@ -8,10 +8,10 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: 'var(--brand)',
-          dark: 'var(--brand-dark)',
-          light: 'var(--brand-light)',
-          muted: 'var(--brand-muted)',
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          dark: 'rgb(var(--brand-dark) / <alpha-value>)',
+          light: 'rgb(var(--brand-light) / <alpha-value>)',
+          muted: 'rgb(var(--brand-muted) / <alpha-value>)',
         },
         paper: {
           DEFAULT: '#FBFAF7',

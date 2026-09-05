@@ -52,10 +52,10 @@
 
 @layer base {
   :root {
-    --brand: #1F7A50;
-    --brand-dark: #175F3E;
-    --brand-light: #2E9B68;
-    --brand-muted: #7CBF9F;
+    --brand: 31 122 80;
+    --brand-dark: 23 95 62;
+    --brand-light: 46 155 104;
+    --brand-muted: 124 191 159;
   }
 
   html {

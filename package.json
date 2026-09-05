@@ -13,6 +13,7 @@
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.45.4",
     "@tabler/icons-react": "^3.14.0",
+    "canvg": "^4.0.3",
     "date-fns": "^3.6.0",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
