@@ -163,10 +163,10 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight md:text-2xl dark:text-stone-50">
+          <h1 className="text-xl font-bold tracking-tight md:text-2xl ">
             Empleados
           </h1>
-          <p className="text-stone-500 text-sm dark:text-stone-400">
+          <p className="text-stone-500 text-sm ">
             {activeCount} activos · {employees.length} totales
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function EmployeesPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl bg-stone-100 animate-pulse h-32 md:h-16 dark:bg-stone-900"
+              className="rounded-xl bg-stone-100 animate-pulse h-32 md:h-16 "
             />
           ))}
         </div>
@@ -190,7 +190,7 @@ export default function EmployeesPage() {
           <div className="w-16 h-16 mx-auto rounded-full bg-brand/10 flex items-center justify-center mb-4">
             <IconUserPlus size={30} className="text-brand" stroke={1.75} />
           </div>
-          <p className="text-stone-500 mb-4 dark:text-stone-400">
+          <p className="text-stone-500 mb-4 ">
             Aún no hay empleados
           </p>
           <button onClick={openCreate} className="btn-primary">
@@ -204,7 +204,7 @@ export default function EmployeesPage() {
             {employees.map((emp) => (
               <div
                 key={emp.id}
-                className="bg-white rounded-2xl border border-stone-200 p-4 shadow-soft dark:bg-stone-900 dark:border-stone-800"
+                className="bg-white rounded-2xl border border-stone-200 p-4 shadow-soft  "
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -212,10 +212,10 @@ export default function EmployeesPage() {
                       {initials(emp.name)}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-semibold text-stone-900 truncate dark:text-stone-100">
+                      <div className="font-semibold text-stone-900 truncate ">
                         {emp.name}
                       </div>
-                      <div className="text-xs text-stone-500 truncate dark:text-stone-400">
+                      <div className="text-xs text-stone-500 truncate ">
                         {emp.position || 'Sin puesto'}
                       </div>
                     </div>
@@ -223,8 +223,8 @@ export default function EmployeesPage() {
                   <span
                     className={`shrink-0 px-2 py-1 rounded-full text-[11px] font-semibold ${
                       emp.is_active
-                        ? 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
-                        : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
+                        ? 'bg-emerald-100/70 text-emerald-700  '
+                        : 'bg-stone-100 text-stone-500  '
                     }`}
                   >
                     {emp.is_active ? 'Activo' : 'Inactivo'}
@@ -234,7 +234,7 @@ export default function EmployeesPage() {
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <button
                     onClick={() => openEdit(emp)}
-                    className="py-2.5 rounded-xl text-sm font-medium bg-brand/10 text-brand active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5 dark:bg-brand/15"
+                    className="py-2.5 rounded-xl text-sm font-medium bg-brand/10 text-brand active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5 "
                   >
                     <IconPencil size={16} stroke={2} /> Editar
                   </button>
@@ -242,8 +242,8 @@ export default function EmployeesPage() {
                     onClick={() => handleToggleActive(emp)}
                     className={`py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5 ${
                       emp.is_active
-                        ? 'bg-amber-100/70 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
-                        : 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        ? 'bg-amber-100/70 text-amber-700  '
+                        : 'bg-emerald-100/70 text-emerald-700  '
                     }`}
                   >
                     <IconPower size={16} stroke={2} />
@@ -251,7 +251,7 @@ export default function EmployeesPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(emp)}
-                    className="py-2.5 rounded-xl text-sm font-medium bg-rose-100/70 text-rose-700 active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5 dark:bg-rose-950/50 dark:text-rose-400"
+                    className="py-2.5 rounded-xl text-sm font-medium bg-rose-100/70 text-rose-700 active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5  "
                   >
                     <IconTrash size={16} stroke={2} />
                   </button>
@@ -262,50 +262,50 @@ export default function EmployeesPage() {
 
           {/* Vista escritorio: tabla */}
           <div className="hidden md:block card overflow-hidden p-0">
-            <table className="min-w-full divide-y divide-stone-200 dark:divide-stone-800">
-              <thead className="bg-stone-50 dark:bg-stone-900/60">
+            <table className="min-w-full divide-y divide-stone-200 ">
+              <thead className="bg-stone-50 ">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
                     Empleado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
                     Puesto
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-stone-100 dark:bg-stone-900 dark:divide-stone-800">
+              <tbody className="bg-white divide-y divide-stone-100  ">
                 {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/40">
+                  <tr key={emp.id} className="hover:bg-stone-50 ">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-bold">
                           {initials(emp.name)}
                         </div>
                         <div>
-                          <div className="text-sm font-medium dark:text-stone-200">
+                          <div className="text-sm font-medium ">
                             {emp.name}
                           </div>
-                          <div className="text-xs text-stone-500 dark:text-stone-400">
+                          <div className="text-xs text-stone-500 ">
                             {emp.email || 'Sin email'}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-stone-700 dark:text-stone-300">
+                    <td className="px-6 py-4 text-sm text-stone-700 ">
                       {emp.position || 'Sin puesto'}
                     </td>
                     <td className="px-6 py-4">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           emp.is_active
-                            ? 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
-                            : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
+                            ? 'bg-emerald-100/70 text-emerald-700  '
+                            : 'bg-stone-100 text-stone-500  '
                         }`}
                       >
                         {emp.is_active ? 'Activo' : 'Inactivo'}
@@ -321,13 +321,13 @@ export default function EmployeesPage() {
                         </button>
                         <button
                           onClick={() => handleToggleActive(emp)}
-                          className="text-sm text-amber-600 font-medium dark:text-amber-400"
+                          className="text-sm text-amber-600 font-medium "
                         >
                           {emp.is_active ? 'Desactivar' : 'Activar'}
                         </button>
                         <button
                           onClick={() => handleDelete(emp)}
-                          className="text-sm text-rose-600 font-medium dark:text-rose-400"
+                          className="text-sm text-rose-600 font-medium "
                         >
                           Eliminar
                         </button>
@@ -343,9 +343,9 @@ export default function EmployeesPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-stone-950/50 flex items-end md:items-center justify-center z-50">
-          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-lift w-full md:max-w-md p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] max-h-[92dvh] overflow-y-auto dark:bg-stone-900">
-            <div className="md:hidden w-10 h-1 rounded-full bg-stone-200 mx-auto mb-4 dark:bg-stone-700" />
-            <h2 className="text-lg font-bold mb-4 tracking-tight dark:text-stone-50">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-lift w-full md:max-w-md p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] max-h-[92dvh] overflow-y-auto ">
+            <div className="md:hidden w-10 h-1 rounded-full bg-stone-200 mx-auto mb-4 " />
+            <h2 className="text-lg font-bold mb-4 tracking-tight ">
               {editing ? 'Editar empleado' : 'Nuevo empleado'}
             </h2>
 
@@ -406,7 +406,7 @@ export default function EmployeesPage() {
                   maxLength={4}
                   inputMode="numeric"
                 />
-                <p className="text-xs text-stone-500 mt-1.5 dark:text-stone-400">
+                <p className="text-xs text-stone-500 mt-1.5 ">
                   {editing
                     ? 'Si lo dejas vacío, el empleado conserva su código actual. 4 dígitos numéricos'
                     : 'El empleado usará este código en el teclado de fichaje (4 dígitos)'}

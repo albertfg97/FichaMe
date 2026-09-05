@@ -3,8 +3,10 @@
 -- Ejecuta este script en el SQL Editor de Supabase
 -- =============================================
 
--- Extensión para UUIDs
-create extension if not exists "pgcrypto";
+-- Extensión para UUIDs y cifrado bcrypt (crypt/gen_salt).
+-- En Supabase pgcrypto suele vivir en el esquema `extensions`,
+-- por eso se fuerza ese esquema aquí y en el search_path de las funciones.
+create extension if not exists "pgcrypto" with schema extensions;
 
 -- =============================================
 -- TABLA: profiles
@@ -57,7 +59,7 @@ create index if not exists idx_pin_attempts_time
 create or replace function public.hash_employee_pin()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer set search_path = public, extensions
 as $$
 begin
   if TG_OP = 'INSERT' or new.pin is distinct from old.pin then
@@ -231,7 +233,7 @@ create or replace function public.verify_pin(
 )
 returns json
 language plpgsql
-security definer set search_path = public
+security definer set search_path = public, extensions
 as $$
 declare
   emp record;

@@ -7,8 +7,10 @@
 -- Es idempotente: se puede re-ejecutar sin riesgo.
 -- =============================================
 
--- Extensión (por si no está en la BD)
-create extension if not exists "pgcrypto";
+-- Extensión (por si no está en la BD).
+-- En Supabase pgcrypto suele vivir en el esquema `extensions`,
+-- por eso se fuerza ese esquema aquí y en el search_path de las funciones.
+create extension if not exists "pgcrypto" with schema extensions;
 
 -- =============================================
 -- (2) TABLA: pin_attempts + RLS
@@ -43,7 +45,7 @@ where pin not like '$2%';
 create or replace function public.hash_employee_pin()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer set search_path = public, extensions
 as $$
 begin
   if TG_OP = 'INSERT' or new.pin is distinct from old.pin then
@@ -77,7 +79,7 @@ create or replace function public.verify_pin(
 )
 returns json
 language plpgsql
-security definer set search_path = public
+security definer set search_path = public, extensions
 as $$
 declare
   emp record;

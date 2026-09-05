@@ -46,7 +46,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <main className="relative overflow-hidden min-h-[100dvh] flex items-center justify-center px-4 py-8 bg-paper dark:bg-stone-950">
+    <main className="relative overflow-hidden min-h-[100dvh] flex items-center justify-center px-4 py-8 bg-paper ">
       <div
         className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[36rem] h-[36rem] rounded-full bg-brand/5 blur-3xl"
         aria-hidden
@@ -56,7 +56,7 @@ export default function AdminLogin() {
           <span className="inline-flex w-14 h-14 rounded-2xl bg-brand items-center justify-center text-white font-bold text-xl shadow-soft mb-4">
             F
           </span>
-          <h1 className="text-2xl font-bold tracking-tight dark:text-stone-50">
+          <h1 className="text-2xl font-bold tracking-tight ">
             FichaMe
           </h1>
           <p className="text-stone-500 mt-1">Panel de administración</p>
@@ -64,10 +64,10 @@ export default function AdminLogin() {
 
         <form
           onSubmit={handleLogin}
-          className="bg-white rounded-2xl border border-stone-200 shadow-soft p-6 space-y-4 dark:bg-stone-900 dark:border-stone-800"
+          className="bg-white rounded-2xl border border-stone-200 shadow-soft p-6 space-y-4  "
         >
           {error && (
-            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2.5 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60">
+            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2.5   ">
               {error}
             </div>
           )}
@@ -116,7 +116,7 @@ export default function AdminLogin() {
         <div className="text-center mt-6">
           <Link
             href="/"
-            className="text-sm text-stone-500 inline-flex items-center gap-1 hover:text-stone-700 dark:hover:text-stone-300"
+            className="text-sm text-stone-500 inline-flex items-center gap-1 hover:text-stone-700 "
           >
             <IconArrowLeft size={16} stroke={2} /> Volver al fichaje
           </Link>
