@@ -5,9 +5,25 @@
 -- =============================================
 
 -- Limpiar objetos existentes en orden inverso de dependencia
+-- 1. Triggers (dependen de funciones)
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_employee_pin_hash on public.employees;
 
+-- 2. Policies (dependen de funciones)
+drop policy if exists "Users view own profile" on public.profiles;
+drop policy if exists "Users update own profile" on public.profiles;
+drop policy if exists "Admins view all profiles" on public.profiles;
+drop policy if exists "Admins manage employees" on public.employees;
+drop policy if exists "Admins manage clockings" on public.clockings;
+drop policy if exists "Admins manage work shifts" on public.work_shifts;
+drop policy if exists "Authenticated users view work shifts" on public.work_shifts;
+drop policy if exists "Admins manage assigned shifts" on public.assigned_shifts;
+drop policy if exists "Authenticated users view assigned shifts" on public.assigned_shifts;
+drop policy if exists "Admins view pin attempts" on public.pin_attempts;
+drop policy if exists "Anyone view kiosk settings" on public.kiosk_settings;
+drop policy if exists "Admins manage kiosk settings" on public.kiosk_settings;
+
+-- 3. Funciones
 drop function if exists public.handle_new_user();
 drop function if exists public.hash_employee_pin();
 drop function if exists public.verify_pin(text);
@@ -17,6 +33,7 @@ drop function if exists public.correct_clocking_time(uuid, timestamptz, uuid);
 drop function if exists public.get_daily_overview(date);
 drop function if exists public.is_admin();
 
+-- 4. Tablas
 drop table if exists public.assigned_shifts cascade;
 drop table if exists public.work_shifts cascade;
 drop table if exists public.clockings cascade;
