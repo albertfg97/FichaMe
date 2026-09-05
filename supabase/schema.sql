@@ -121,6 +121,9 @@ create table public.kiosk_settings (
   subtitle text not null default 'Introduce tu código para fichar',
   logo_url text,
   brand_color text not null default '#1F7A50',
+  holiday_region text,
+  holiday_province text,
+  holiday_city text,
   updated_at timestamptz not null default now()
 );
 

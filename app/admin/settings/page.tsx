@@ -17,10 +17,18 @@ interface KioskSettings {
   subtitle: string;
   logo_url: string | null;
   brand_color: string;
+  holiday_region: string | null;
+  holiday_province: string | null;
+  holiday_city: string | null;
 }
 
 interface Holiday {
   date: string;
+  name: string;
+}
+
+interface PlaceItem {
+  slug: string;
   name: string;
 }
 
@@ -41,6 +49,9 @@ export default function SettingsPage() {
     subtitle: 'Introduce tu código para fichar',
     logo_url: null,
     brand_color: '#1F7A50',
+    holiday_region: null,
+    holiday_province: null,
+    holiday_city: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,17 +60,52 @@ export default function SettingsPage() {
   const [newHoliday, setNewHoliday] = useState<Holiday>({ date: '', name: '' });
   const [addingHoliday, setAddingHoliday] = useState(false);
   const [deletingHoliday, setDeletingHoliday] = useState<string | null>(null);
+  const [holidayRegions, setHolidayRegions] = useState<PlaceItem[]>([]);
+  const [holidayProvinces, setHolidayProvinces] = useState<PlaceItem[]>([]);
+  const [holidayLocalities, setHolidayLocalities] = useState<PlaceItem[]>([]);
+  const [regionSlug, setRegionSlug] = useState('');
+  const [provinceSlug, setProvinceSlug] = useState('');
+  const [citySlug, setCitySlug] = useState('');
+  const [busyProvinces, setBusyProvinces] = useState(false);
+  const [busyLocalities, setBusyLocalities] = useState(false);
+  const [importingCity, setImportingCity] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('kiosk_settings')
-      .select('title, subtitle, logo_url, brand_color')
-      .eq('id', 1)
-      .single()
-      .then(({ data }) => {
-        if (data) setSettings(data);
+    (async () => {
+      try {
+        const [{ data: st }, rg] = await Promise.all([
+          supabase
+            .from('kiosk_settings')
+            .select(
+              'title, subtitle, logo_url, brand_color, holiday_region, holiday_province, holiday_city'
+            )
+            .eq('id', 1)
+            .single(),
+          holidayFetch({ type: 'comunidades' }),
+        ]);
+        if (st) setSettings(st);
+        setHolidayRegions(rg.items ?? []);
+        if (st?.holiday_region) {
+          setRegionSlug(st.holiday_region);
+          const pr = await holidayFetch({ type: 'provincias', ccaa: st.holiday_region });
+          setHolidayProvinces(pr.items ?? []);
+          if (st?.holiday_province) {
+            setProvinceSlug(st.holiday_province);
+            const lo = await holidayFetch({
+              type: 'localidades',
+              ccaa: st.holiday_region,
+              provincia: st.holiday_province,
+            });
+            setHolidayLocalities(lo.items ?? []);
+            if (st?.holiday_city) setCitySlug(st.holiday_city);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -104,6 +150,94 @@ export default function SettingsPage() {
     }
     setHolidays((h) => h.filter((x) => x.date !== date));
     toast.success('Festivo eliminado');
+  }
+
+  async function holidayFetch(params: Record<string, string>) {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`/api/holidays?${qs}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Error consultando festivos');
+    return data as { items?: PlaceItem[]; holidays?: { date: string; name: string }[] };
+  }
+
+  async function onRegionChange(slug: string) {
+    setRegionSlug(slug);
+    setProvinceSlug('');
+    setCitySlug('');
+    setHolidayProvinces([]);
+    setHolidayLocalities([]);
+    if (!slug) return;
+    setBusyProvinces(true);
+    try {
+      const pr = await holidayFetch({ type: 'provincias', ccaa: slug });
+      setHolidayProvinces(pr.items ?? []);
+    } catch {
+      toast.error('No se pudieron cargar las provincias');
+    } finally {
+      setBusyProvinces(false);
+    }
+  }
+
+  async function onProvinceChange(slug: string) {
+    setProvinceSlug(slug);
+    setCitySlug('');
+    setHolidayLocalities([]);
+    if (!slug || !regionSlug) return;
+    setBusyLocalities(true);
+    try {
+      const lo = await holidayFetch({
+        type: 'localidades',
+        ccaa: regionSlug,
+        provincia: slug,
+      });
+      setHolidayLocalities(lo.items ?? []);
+    } catch {
+      toast.error('No se pudieron cargar los municipios');
+    } finally {
+      setBusyLocalities(false);
+    }
+  }
+
+  async function importCityHolidays() {
+    if (!regionSlug || !provinceSlug || !citySlug) return;
+    setImportingCity(true);
+    try {
+      const data = await holidayFetch({
+        type: 'festivos',
+        ccaa: regionSlug,
+        provincia: provinceSlug,
+        municipio: citySlug,
+      });
+      const rows = (data.holidays ?? []).map((h) => ({ date: h.date, name: h.name }));
+      if (rows.length === 0) throw new Error('El municipio no devuelve festivos');
+
+      const { error } = await supabase.from('holidays').upsert(rows, { onConflict: 'date' });
+      if (error) throw error;
+
+      const { error: e2 } = await supabase
+        .from('kiosk_settings')
+        .update({
+          holiday_region: regionSlug,
+          holiday_province: provinceSlug,
+          holiday_city: citySlug,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+      if (e2) console.error(e2);
+
+      const { data: hd } = await supabase
+        .from('holidays')
+        .select('date, name')
+        .gte('date', '2010-01-01')
+        .order('date', { ascending: true });
+      if (hd) setHolidays(hd);
+
+      toast.success(`Festivos importados (${rows.length} días)`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al importar festivos');
+    } finally {
+      setImportingCity(false);
+    }
   }
 
   async function handleSave() {
@@ -177,6 +311,71 @@ export default function SettingsPage() {
         <p className="text-sm text-stone-500 mb-4">
           En estos días el kiosco no permitirá fichar.
         </p>
+
+        <div className="rounded-xl bg-stone-50 border border-stone-200 p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2">
+            Importar festivos de una ciudad
+          </h3>
+          <p className="text-xs text-stone-500 mb-3">
+            Selecciona comunidad autónoma, provincia y municipio. Se añadirán los
+            festivos de 2026 y 2027 (nacionales, autonómicos y locales).
+          </p>
+          <div className="space-y-2">
+            <select
+              className="input w-full"
+              value={regionSlug}
+              onChange={(e) => onRegionChange(e.target.value)}
+            >
+              <option value="">Comunidad autónoma</option>
+              {holidayRegions.map((r) => (
+                <option key={r.slug} value={r.slug}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input w-full"
+              value={provinceSlug}
+              onChange={(e) => onProvinceChange(e.target.value)}
+              disabled={!regionSlug || busyProvinces}
+            >
+              <option value="">{busyProvinces ? 'Cargando...' : 'Provincia'}</option>
+              {holidayProvinces.map((p) => (
+                <option key={p.slug} value={p.slug}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input w-full"
+              value={citySlug}
+              onChange={(e) => setCitySlug(e.target.value)}
+              disabled={!provinceSlug || busyLocalities}
+            >
+              <option value="">
+                {busyLocalities ? 'Cargando...' : 'Municipio'}
+              </option>
+              {holidayLocalities.map((l) => (
+                <option key={l.slug} value={l.slug}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={importCityHolidays}
+              disabled={!citySlug || importingCity}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+            >
+              <IconCalendarPlus size={17} stroke={2} />
+              {importingCity
+                ? 'Importando...'
+                : `Añadir festivos de ${holidayLocalities.find((l) => l.slug === citySlug)?.name ?? ''}`}
+            </button>
+          </div>
+          <p className="text-[11px] text-stone-400 mt-2">
+            Festivos: <a href="https://calendariosnacionales.com" target="_blank" rel="noopener noreferrer" className="underline">calendariosnacionales.com</a>
+          </p>
+        </div>
 
         <div className="space-y-2 mb-4">
           {holidays.length === 0 ? (
