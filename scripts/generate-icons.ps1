@@ -9,7 +9,7 @@ param(
 
 Add-Type -AssemblyName System.Drawing
 
-$brand = [System.Drawing.Color]::FromArgb(79, 70, 229)
+$brand = [System.Drawing.Color]::FromArgb(31, 122, 80)
 $white = [System.Drawing.Color]::White
 
 function New-RoundedRectPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) {
