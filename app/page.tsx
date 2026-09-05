@@ -371,26 +371,30 @@ export default function ClockingPage() {
                 {lastAbsenceReason ? ABSENCE_REASON_LABELS[lastAbsenceReason] : ABSENCE_REASON_LABELS.unspecified}
               </>
             )}
-            <span className="mx-2 text-stone-300">-</span>
-            {lastSubmittedAt
-              ? new Date(lastSubmittedAt).toLocaleTimeString('es-ES', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : new Date().toLocaleTimeString('es-ES', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-            {lastSubmittedAt &&
-              new Date(lastSubmittedAt).toDateString() !== new Date().toDateString() && (
-                <span className="text-stone-400">
-                  {' '}
-                  · {new Date(lastSubmittedAt).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </span>
-              )}
+            {!isAbsence && (
+              <>
+                <span className="mx-2 text-stone-300">-</span>
+                {lastSubmittedAt
+                  ? new Date(lastSubmittedAt).toLocaleTimeString('es-ES', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : new Date().toLocaleTimeString('es-ES', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                {lastSubmittedAt &&
+                  new Date(lastSubmittedAt).toDateString() !== new Date().toDateString() && (
+                    <span className="text-stone-400">
+                      {' '}
+                      · {new Date(lastSubmittedAt).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                  )}
+              </>
+            )}
           </p>
           <button
             onClick={resetPage}
