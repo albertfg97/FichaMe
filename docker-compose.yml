@@ -6,7 +6,7 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?Define NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?Define NEXT_PUBLIC_SUPABASE_ANON_KEY}
     image: fichame:latest
-    container_name: fichame-dev
+    container_name: fichame
     restart: unless-stopped
     ports:
       - "3003:3000"
