@@ -80,7 +80,7 @@ powershell -ExecutionPolicy Bypass -File scripts\generate-icons.ps1
 
 ### Gestión de códigos
 
-Los códigos PIN se asignan en **Admin → Empleados**. Son numéricos (máx. 6 dígitos) y únicos. Si un empleado olvida su código, el admin puede **cambiarlo** desde el panel (se guardan cifrados, no se pueden consultar).
+Los códigos PIN se asignan en **Admin → Empleados**. Son numéricos de **4 dígitos** y únicos. Si un empleado olvida su código, el admin puede **cambiarlo** desde el panel (se guardan cifrados, no se pueden consultar).
 
 ## Despliegue con Docker
 

@@ -331,7 +331,7 @@ export default function ClockingPage() {
               )}
             </div>
             <div className="flex justify-center gap-3" aria-label="PIN introducido">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-14 flex-1 rounded-xl border-2 transition-all ${
@@ -356,7 +356,7 @@ export default function ClockingPage() {
                       onClick={() => {
                         if (isClear) setPin('');
                         else if (isDelete) setPin(pin.slice(0, -1));
-                        else if (pin.length < 6) setPin(pin + key);
+                        else if (pin.length < 4) setPin(pin + key);
                       }}
                       className={`h-16 rounded-2xl text-2xl font-semibold flex items-center justify-center active:scale-95 transition-transform select-none ${
                         isClear

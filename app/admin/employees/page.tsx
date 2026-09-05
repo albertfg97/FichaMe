@@ -398,13 +398,13 @@ export default function EmployeesPage() {
                   }
                   className="input font-mono text-lg text-center tracking-[0.3em]"
                   placeholder={editing ? 'Dejar en blanco para no cambiar' : '••••'}
-                  maxLength={6}
+                  maxLength={4}
                   inputMode="numeric"
                 />
                 <p className="text-xs text-slate-400 mt-1">
                   {editing
-                    ? 'Si lo dejas vacío, el empleado conserva su código actual'
-                    : 'El empleado usará este código en el teclado de fichaje'}
+                    ? 'Si lo dejas vacío, el empleado conserva su código actual. 4 dígitos numéricos'
+                    : 'El empleado usará este código en el teclado de fichaje (4 dígitos)'}
                 </p>
               </div>
             </div>
