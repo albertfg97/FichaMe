@@ -23,6 +23,13 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+# Validación clara de que las variables llegan al build
+RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" && test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  || (echo "== ERROR DE BUILD ==" && \
+      echo "Faltan NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY" && \
+      echo "Definelas en: Stack de Portainer -> Edit stack -> Environment variables" && \
+      exit 1)
+
 RUN npm run build
 
 # ---------- Etapa 3: producción ----------
