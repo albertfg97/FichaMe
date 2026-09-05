@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Clocking } from '@/lib/types';
+import { clockingLabel } from '@/lib/types';
 import {
   IconUsers,
   IconLogout,
   IconLogout2,
   IconClockHour4,
   IconArrowUpRight,
+  IconCalendarOff,
 } from '@tabler/icons-react';
 
 interface DailyOverview {
@@ -136,13 +138,17 @@ export default function DashboardPage() {
                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                       c.type === 'in'
                         ? 'bg-emerald-100/70 text-emerald-700  '
-                        : 'bg-rose-100/70 text-rose-700  '
+                        : c.type === 'out'
+                        ? 'bg-rose-100/70 text-rose-700  '
+                        : 'bg-amber-100/70 text-amber-700  '
                     }`}
                   >
                     {c.type === 'in' ? (
                       <IconLogout size={18} stroke={2} />
-                    ) : (
+                    ) : c.type === 'out' ? (
                       <IconLogout2 size={18} stroke={2} />
+                    ) : (
+                      <IconCalendarOff size={18} stroke={2} />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -150,7 +156,7 @@ export default function DashboardPage() {
                       {c.employee_name}
                     </div>
                     <div className="text-xs text-stone-500 ">
-                      {c.type === 'in' ? 'Entrada' : 'Salida'}
+                      {clockingLabel(c.type, c.absence_reason)}
                       {c.corrected_by ? ' · Corregido' : ''}
                     </div>
                   </div>

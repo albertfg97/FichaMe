@@ -3,13 +3,25 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
-import { IconDeviceFloppy, IconUpload, IconX, IconCheck } from '@tabler/icons-react';
+import {
+  IconDeviceFloppy,
+  IconUpload,
+  IconX,
+  IconCheck,
+  IconCalendarPlus,
+  IconTrash,
+} from '@tabler/icons-react';
 
 interface KioskSettings {
   title: string;
   subtitle: string;
   logo_url: string | null;
   brand_color: string;
+}
+
+interface Holiday {
+  date: string;
+  name: string;
 }
 
 const PRESET_COLORS = [
@@ -33,6 +45,10 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [newHoliday, setNewHoliday] = useState<Holiday>({ date: '', name: '' });
+  const [addingHoliday, setAddingHoliday] = useState(false);
+  const [deletingHoliday, setDeletingHoliday] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -45,6 +61,50 @@ export default function SettingsPage() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    supabase
+      .from('holidays')
+      .select('date, name')
+      .gte('date', '2010-01-01')
+      .order('date', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data) setHolidays(data);
+      });
+  }, []);
+
+  async function handleAddHoliday() {
+    if (!newHoliday.date || !newHoliday.name.trim()) {
+      toast.error('Introduce fecha y nombre del festivo');
+      return;
+    }
+    setAddingHoliday(true);
+    const { error } = await supabase
+      .from('holidays')
+      .insert(newHoliday)
+      .select()
+      .single();
+    setAddingHoliday(false);
+    if (error) {
+      toast.error('Error al añadir el festivo');
+      return;
+    }
+    setHolidays((h) => [...h, newHoliday].sort((a, b) => a.date.localeCompare(b.date)));
+    setNewHoliday({ date: '', name: '' });
+    toast.success('Festivo añadido');
+  }
+
+  async function handleDeleteHoliday(date: string) {
+    setDeletingHoliday(date);
+    const { error } = await supabase.from('holidays').delete().eq('date', date);
+    setDeletingHoliday(null);
+    if (error) {
+      toast.error('Error al eliminar el festivo');
+      return;
+    }
+    setHolidays((h) => h.filter((x) => x.date !== date));
+    toast.success('Festivo eliminado');
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -219,6 +279,72 @@ export default function SettingsPage() {
           >
             <IconDeviceFloppy size={18} stroke={2} />
             {saving ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-8 card max-w-lg">
+        <h2 className="font-semibold mb-3">Días festivos</h2>
+        <p className="text-sm text-stone-500 mb-4">
+          En estos días el kiosco no permitirá fichar.
+        </p>
+
+        <div className="space-y-2 mb-4">
+          {holidays.length === 0 ? (
+            <p className="text-sm text-stone-400 py-2">
+              No hay festivos configurados.
+            </p>
+          ) : (
+            holidays.map((h) => (
+              <div
+                key={h.date}
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-stone-50 border border-stone-200"
+              >
+                <div>
+                  <div className="text-sm font-medium ">{h.name}</div>
+                  <div className="text-xs text-stone-500">
+                    {new Date(`${h.date}T12:00:00`).toLocaleDateString('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteHoliday(h.date)}
+                  disabled={deletingHoliday === h.date}
+                  className="text-stone-400 hover:text-rose-600 transition-colors p-1.5"
+                  title="Eliminar festivo"
+                >
+                  <IconTrash size={17} stroke={2} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="date"
+            value={newHoliday.date}
+            onChange={(e) => setNewHoliday((h) => ({ ...h, date: e.target.value }))}
+            className="input sm:w-40"
+          />
+          <input
+            type="text"
+            value={newHoliday.name}
+            onChange={(e) => setNewHoliday((h) => ({ ...h, name: e.target.value }))}
+            className="input flex-1"
+            placeholder="Nombre del festivo (ej. Navidad)"
+          />
+          <button
+            onClick={handleAddHoliday}
+            disabled={addingHoliday}
+            className="btn-primary flex items-center justify-center gap-2"
+          >
+            <IconCalendarPlus size={17} stroke={2} />
+            {addingHoliday ? 'Añadiendo...' : 'Añadir'}
           </button>
         </div>
       </div>

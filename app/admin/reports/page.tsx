@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import type { Clocking, Employee } from '@/lib/types';
+import { clockingLabel, ABSENCE_REASON_LABELS } from '@/lib/types';
 import {
   IconDownload,
   IconPencil,
@@ -133,7 +134,12 @@ export default function ReportsPage() {
   const exportRows = useMemo(() => {
     return clockings.map((c) => [
       c.employee_name,
-      c.type === 'in' ? 'Entrada' : 'Salida',
+      clockingLabel(c.type, c.absence_reason),
+      c.type === 'absence'
+        ? (c.absence_reason
+            ? ABSENCE_REASON_LABELS[c.absence_reason]
+            : ABSENCE_REASON_LABELS.unspecified)
+        : '',
       new Date(c.clocked_at).toLocaleString('es-ES'),
       c.corrected_by ? 'Sí' : 'No',
     ]);
@@ -142,7 +148,7 @@ export default function ReportsPage() {
   const exportFilename = `fichajes_${fromDate}_${toDate}`;
 
   function exportCSV() {
-    const header = ['Empleado', 'Tipo', 'Fecha y hora', 'Corregido'];
+    const header = ['Empleado', 'Tipo', 'Motivo', 'Fecha y hora', 'Corregido'];
     const csv = [header, ...exportRows]
       .map((row) => row.map((cell) => `"${cell}"`).join(','))
       .join('\n');
@@ -158,7 +164,7 @@ export default function ReportsPage() {
   function exportXLSX() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
-      ['Empleado', 'Tipo', 'Fecha y hora', 'Corregido'],
+      ['Empleado', 'Tipo', 'Motivo', 'Fecha y hora', 'Corregido'],
       ...exportRows,
     ]);
     XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
@@ -174,7 +180,7 @@ export default function ReportsPage() {
     doc.text(`Periodo: ${fromDate} a ${toDate}`, 14, 22);
     autoTable(doc, {
       startY: 28,
-      head: [['Empleado', 'Tipo', 'Fecha y hora', 'Corregido']],
+      head: [['Empleado', 'Tipo', 'Motivo', 'Fecha y hora', 'Corregido']],
       body: exportRows,
       styles: { fontSize: 9 },
       headStyles: { fillColor: [31, 122, 80], textColor: 255 },
@@ -332,10 +338,12 @@ export default function ReportsPage() {
                       className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                         c.type === 'in'
                           ? 'bg-emerald-100/70 text-emerald-700  '
-                          : 'bg-rose-100/70 text-rose-700  '
+                          : c.type === 'out'
+                          ? 'bg-rose-100/70 text-rose-700  '
+                          : 'bg-amber-100/70 text-amber-700  '
                       }`}
                     >
-                      {c.type === 'in' ? 'Entrada' : 'Salida'}
+                      {clockingLabel(c.type, c.absence_reason)}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
@@ -385,6 +393,9 @@ export default function ReportsPage() {
                       Hora
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
+                      Motivo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
                       Estado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider ">
@@ -405,10 +416,12 @@ export default function ReportsPage() {
                             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               c.type === 'in'
                                 ? 'bg-emerald-100/70 text-emerald-700  '
-                                : 'bg-rose-100/70 text-rose-700  '
+                                : c.type === 'out'
+                                ? 'bg-rose-100/70 text-rose-700  '
+                                : 'bg-amber-100/70 text-amber-700  '
                             }`}
                           >
-                            {c.type === 'in' ? 'Entrada' : 'Salida'}
+                            {clockingLabel(c.type, c.absence_reason)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-stone-700 ">
@@ -416,6 +429,13 @@ export default function ReportsPage() {
                         </td>
                         <td className="px-6 py-4 text-sm font-mono tabular-nums text-stone-700 ">
                           {time}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-500">
+                          {c.type === 'absence'
+                            ? (c.absence_reason
+                                ? ABSENCE_REASON_LABELS[c.absence_reason]
+                                : ABSENCE_REASON_LABELS.unspecified)
+                            : '—'}
                         </td>
                         <td className="px-6 py-4">
                           {c.corrected_by ? (
@@ -453,7 +473,11 @@ export default function ReportsPage() {
             </h2>
             <p className="text-sm text-stone-500 mb-4 ">
               {editingClocking.employee_name} ·{' '}
-              {editingClocking.type === 'in' ? 'Entrada' : 'Salida'}
+              {editingClocking.type === 'absence'
+                ? 'Ausencia'
+                : editingClocking.type === 'in'
+                ? 'Entrada'
+                : 'Salida'}
             </p>
 
             <label className="label">Nueva fecha</label>

@@ -6,13 +6,19 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { deriveBrand } from '@/lib/colors';
 import ClockTimePicker from '@/components/ClockTimePicker';
+import type { AbsenceReason } from '@/lib/types';
+import { ABSENCE_REASON_LABELS, ABSENCE_REASONS } from '@/lib/types';
 import {
   IconArrowLeft,
   IconBackspace,
+  IconCalendarOff,
   IconCheck,
   IconClock,
+  IconHealthRecognition,
+  IconHelpCircle,
   IconLogin2,
   IconLogout2,
+  IconLuggage,
   IconScan,
   IconX,
 } from '@tabler/icons-react';
@@ -70,6 +76,12 @@ export default function ClockingPage() {
   const [now, setNow] = useState(new Date());
   const [lastClockingAt, setLastClockingAt] = useState<string | null>(null);
   const [lockSeconds, setLockSeconds] = useState(0);
+  const [holidays, setHolidays] = useState<string[]>([]);
+  const [holidayNames, setHolidayNames] = useState<Record<string, string>>({});
+  const [forgotMode, setForgotMode] = useState(false);
+  const [showAbsencePicker, setShowAbsencePicker] = useState(false);
+  const [lastType, setLastType] = useState<'in' | 'out' | 'absence'>('in');
+  const [lastAbsenceReason, setLastAbsenceReason] = useState<AbsenceReason | null>(null);
   const [kioskSettings, setKioskSettings] = useState({
     title: 'FichaMe',
     subtitle: 'Introduce tu código para fichar',
@@ -86,7 +98,45 @@ export default function ClockingPage() {
       .then(({ data }) => {
         if (data) setKioskSettings(data);
       });
+
+    supabase
+      .from('holidays')
+      .select('date, name')
+      .then(({ data }) => {
+        if (data) {
+          const dates = data.map((h: any) => h.date);
+          const names: Record<string, string> = {};
+          data.forEach((h: any) => {
+            if (h.name) names[h.date] = h.name;
+          });
+          setHolidays(dates);
+          setHolidayNames(names);
+        }
+      });
   }, []);
+
+  function toDateStr(d: Date): string {
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function isWorkingDay(dateStr: string): boolean {
+    const d = new Date(`${dateStr}T12:00:00`);
+    const day = d.getDay();
+    if (day === 0 || day === 6) return false;
+    return !holidays.includes(dateStr);
+  }
+
+  function todayWorking(): boolean {
+    return isWorkingDay(toDateStr(new Date()));
+  }
+
+  const todayIsWorking = todayWorking();
+
+  function effectiveDateStr(): string | null {
+    if (useCustomTime && customDate) return customDate;
+    return toDateStr(new Date());
+  }
 
   useEffect(() => {
     const c = deriveBrand(kioskSettings.brand_color);
@@ -114,7 +164,7 @@ export default function ClockingPage() {
   }, [lockSeconds > 0]);
 
   useEffect(() => {
-    if (useCustomTime) {
+    if (useCustomTime && !forgotMode) {
       const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
       setCustomDate(local.toISOString().slice(0, 10));
       setCustomHour(local.getHours());
@@ -176,6 +226,11 @@ export default function ClockingPage() {
         setLastClockingAt(null);
       }
 
+      if (forgotMode) {
+        setShowTimePicker(false);
+        setUseCustomTime(true);
+      }
+
       setStep('confirming');
     } catch (err) {
       console.error(err);
@@ -188,8 +243,15 @@ export default function ClockingPage() {
   const nextType: 'in' | 'out' =
     !lastClocking || lastClocking.type === 'out' ? 'in' : 'out';
 
-  async function handleConfirm() {
+  async function submitClocking(type: 'in' | 'out' | 'absence', reason?: AbsenceReason) {
     if (!employee) return;
+
+    const dateStr = effectiveDateStr();
+    if (!dateStr || !isWorkingDay(dateStr)) {
+      toast.error('No se puede fichar en un día no laborable');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -200,14 +262,21 @@ export default function ClockingPage() {
             ).toISOString()
           : new Date().toISOString();
 
-      const { data, error } = await supabase.rpc('create_clocking', {
+      const params: Record<string, unknown> = {
         p_employee_id: employee.id,
-        p_type: nextType,
+        p_type: type,
         p_clocked_at: clocked_at,
-      });
+      };
+      if (type === 'absence') {
+        params.p_absence_reason = reason ?? 'unspecified';
+      }
+
+      const { error } = await supabase.rpc('create_clocking', params);
 
       if (error) throw error;
 
+      setLastType(type);
+      setLastAbsenceReason(reason ?? null);
       setLoading(false);
       setStep('ready');
     } catch (err) {
@@ -215,6 +284,15 @@ export default function ClockingPage() {
       toast.error('Error al registrar el fichaje');
       setLoading(false);
     }
+  }
+
+  function handleConfirm() {
+    void submitClocking(nextType);
+  }
+
+  function handleAbsenceSelect(reason: AbsenceReason) {
+    setShowAbsencePicker(false);
+    void submitClocking('absence', reason);
   }
 
   function resetPage() {
@@ -227,29 +305,49 @@ export default function ClockingPage() {
     setCustomHour(0);
     setCustomMinute(0);
     setShowTimePicker(false);
+    setShowAbsencePicker(false);
+    setForgotMode(false);
+    setLastAbsenceReason(null);
     setLoading(false);
     setStep('pin');
   }
 
   if (step === 'ready') {
+    const isAbsence = lastType === 'absence';
     return (
       <main className="relative overflow-hidden min-h-[100dvh] bg-paper flex flex-col items-center justify-center px-6">
         <div
-          className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[34rem] h-[34rem] rounded-full bg-emerald-500/10 blur-3xl"
+          className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[34rem] h-[34rem] rounded-full bg-amber-500/10 blur-3xl"
           aria-hidden
         />
         <div className="w-full max-w-xs text-center">
           <div
-            className="w-24 h-24 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-6"
+            className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 ${
+              isAbsence ? 'bg-amber-100' : 'bg-emerald-100'
+            }`}
             style={{ animation: 'pop-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both' }}
           >
-            <IconCheck size={44} className="text-emerald-700" stroke={2.5} />
+            <IconCheck
+              size={44}
+              className={isAbsence ? 'text-amber-700' : 'text-emerald-700'}
+              stroke={2.5}
+            />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">
-            {nextType === 'in' ? 'Entrada' : 'Salida'} registrada
+            {isAbsence
+              ? 'Ausencia registrada'
+              : lastType === 'in'
+              ? 'Entrada registrada'
+              : 'Salida registrada'}
           </h1>
           <p className="text-stone-500 mb-8">
             {employee?.name}
+            {isAbsence && (
+              <>
+                <span className="mx-2 text-stone-300">-</span>
+                {lastAbsenceReason ? ABSENCE_REASON_LABELS[lastAbsenceReason] : ABSENCE_REASON_LABELS.unspecified}
+              </>
+            )}
             <span className="mx-2 text-stone-300">-</span>
             {new Date().toLocaleTimeString('es-ES', {
               hour: '2-digit',
@@ -328,17 +426,31 @@ export default function ClockingPage() {
                 : 'Registrar salida'}
             </button>
 
-            <button
-              onClick={() => setUseCustomTime(!useCustomTime)}
-              className={`mt-3 w-full py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
-                useCustomTime
-                  ? 'bg-brand text-white'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200/70'
-              }`}
-            >
-              <IconClock size={18} stroke={2} />
-              {useCustomTime ? 'Corrigiendo hora' : 'Corregir hora'}
-            </button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowAbsencePicker(true)}
+                disabled={loading}
+                className={`py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                  showAbsencePicker
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-amber-100 text-amber-700 hover:bg-amber-200/70'
+                }`}
+              >
+                <IconCalendarOff size={18} stroke={2} />
+                Ausencia
+              </button>
+              <button
+                onClick={() => setUseCustomTime(!useCustomTime)}
+                className={`py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                  useCustomTime
+                    ? 'bg-brand text-white'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200/70'
+                }`}
+              >
+                <IconClock size={18} stroke={2} />
+                {useCustomTime ? 'Corrigiendo hora' : 'Corregir hora'}
+              </button>
+            </div>
 
             {useCustomTime && (
               <div className="mt-3 space-y-2">
@@ -373,6 +485,43 @@ export default function ClockingPage() {
                 </p>
               </div>
             )}
+
+            {showAbsencePicker && (
+              <div className="fixed inset-0 bg-stone-950/50 flex items-end md:items-center justify-center z-50">
+                <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-lift w-full md:max-w-sm p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+                  <div className="md:hidden w-10 h-1 rounded-full bg-stone-200 mx-auto mb-4" />
+                  <h2 className="text-lg font-bold mb-1 tracking-tight">
+                    Registrar ausencia
+                  </h2>
+                  <p className="text-xs text-stone-500 mb-4">
+                    Selecciona el motivo de la ausencia
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {ABSENCE_REASONS.map((reason) => (
+                      <button
+                        key={reason}
+                        onClick={() => handleAbsenceSelect(reason)}
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-xl bg-amber-50 text-amber-700 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                      >
+                        {reason === 'sickness' && <IconHealthRecognition size={18} stroke={2} />}
+                        {reason === 'vacation' && <IconLuggage size={18} stroke={2} />}
+                        {reason === 'unspecified' && <IconHelpCircle size={18} stroke={2} />}
+                        {ABSENCE_REASON_LABELS[reason]}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setShowAbsencePicker(false)}
+                    className="mt-3 w-full py-3 text-sm text-stone-500 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -383,6 +532,54 @@ export default function ClockingPage() {
           >
             <IconArrowLeft size={16} stroke={2} /> No soy {employee.name}
           </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!todayIsWorking && !forgotMode) {
+    const todayStr = toDateStr(new Date());
+    const holidayName = holidayNames[todayStr];
+    return (
+      <main className="relative overflow-hidden min-h-[100dvh] bg-paper flex flex-col items-center justify-center px-6">
+        <div
+          className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[34rem] h-[34rem] rounded-full bg-amber-500/10 blur-3xl"
+          aria-hidden
+        />
+        <div className="w-full max-w-xs text-center">
+          <div className="w-24 h-24 mx-auto rounded-full bg-amber-100 flex items-center justify-center mb-6">
+            <IconCalendarOff size={44} className="text-amber-700" stroke={2} />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
+            {holidayName ? 'Hoy es festivo' : 'Hoy no se ficha'}
+          </h1>
+          <p className="text-stone-500 mb-1">
+            {holidayName
+              ? `Festivo: ${holidayName}`
+              : 'Solo se ficha de lunes a viernes'}
+          </p>
+          <p className="text-stone-400 text-sm mb-8">
+            {new Date().toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+            })}
+          </p>
+          <button
+            onClick={() => setForgotMode(true)}
+            className="w-full py-4 rounded-full bg-brand text-white text-lg font-semibold shadow-soft active:scale-[0.98] transition-transform"
+          >
+            Se me olvidó fichar un día anterior
+          </button>
+        </div>
+
+        <div className="relative text-center mt-8">
+          <Link
+            href="/admin"
+            className="text-stone-500 text-sm inline-flex items-center justify-center active:scale-95 transition-transform"
+          >
+            Panel de administración
+          </Link>
         </div>
       </main>
     );

@@ -79,7 +79,9 @@ create index idx_pin_attempts_time
 create table public.clockings (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid references public.employees(id) on delete cascade not null,
-  type text not null check (type in ('in', 'out')),
+  type text not null constraint ck_clockings_type check (type in ('in', 'out', 'absence')),
+  absence_reason text constraint ck_clockings_absence_reason
+    check (absence_reason is null or absence_reason in ('sickness', 'vacation', 'unspecified')),
   clocked_at timestamptz not null default now(),
   original_time timestamptz,
   corrected_by uuid references public.profiles(id),
@@ -125,6 +127,21 @@ create table public.kiosk_settings (
 insert into public.kiosk_settings (id) values (1);
 
 -- =============================================
+-- TABLA: holidays
+-- Días festivos generales. En esos días (además de
+-- sábados y domingos) el kiosco no permite fichar.
+-- =============================================
+create table public.holidays (
+  id uuid primary key default gen_random_uuid(),
+  date date not null unique,
+  name text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index idx_holidays_date
+  on public.holidays (date);
+
+-- =============================================
 -- RLS (Row Level Security)
 -- =============================================
 alter table public.profiles enable row level security;
@@ -134,6 +151,7 @@ alter table public.work_shifts enable row level security;
 alter table public.assigned_shifts enable row level security;
 alter table public.pin_attempts enable row level security;
 alter table public.kiosk_settings enable row level security;
+alter table public.holidays enable row level security;
 
 -- Helper: comprueba si el usuario autenticado es admin.
 -- security definer para evitar infinite recursion en RLS de profiles.
@@ -202,6 +220,15 @@ create policy "Anyone view kiosk settings"
 
 create policy "Admins manage kiosk settings"
   on public.kiosk_settings for all
+  using (public.is_admin());
+
+-- Holidays
+create policy "Anyone view holidays"
+  on public.holidays for select
+  using (true);
+
+create policy "Admins manage holidays"
+  on public.holidays for all
   using (public.is_admin());
 
 -- =============================================
@@ -313,11 +340,12 @@ begin
 end;
 $$;
 
--- Registrar un fichaje (entrada o salida)
+-- Registrar un fichaje (entrada, salida o ausencia)
 create or replace function public.create_clocking(
   p_employee_id uuid,
   p_type text,
-  p_clocked_at timestamptz default now()
+  p_clocked_at timestamptz default now(),
+  p_absence_reason text default null
 )
 returns json
 language plpgsql
@@ -326,6 +354,7 @@ as $$
 declare
   new_clocking record;
   emp_exists boolean;
+  v_reason text;
 begin
   select exists (
     select 1 from public.employees
@@ -336,20 +365,28 @@ begin
     raise exception 'Empleado no encontrado o inactivo';
   end if;
 
-  insert into public.clockings (employee_id, type, clocked_at)
-  values (p_employee_id, p_type, p_clocked_at)
+  if p_type = 'absence' then
+    v_reason := coalesce(p_absence_reason, 'unspecified');
+  else
+    v_reason := null;
+  end if;
+
+  insert into public.clockings (employee_id, type, absence_reason, clocked_at)
+  values (p_employee_id, p_type, v_reason, p_clocked_at)
   returning * into new_clocking;
 
   return json_build_object(
     'id', new_clocking.id,
     'employee_id', new_clocking.employee_id,
     'type', new_clocking.type,
+    'absence_reason', new_clocking.absence_reason,
     'clocked_at', new_clocking.clocked_at
   );
 end;
 $$;
 
--- Obtener el último fichaje de un empleado
+-- Obtener el último fichaje de entrada/salida de un empleado.
+-- Las ausencias no se tienen en cuenta para no romper el ciclo.
 create or replace function public.get_last_clocking(
   p_employee_id uuid
 )
@@ -363,6 +400,7 @@ begin
   select * into last_c
   from public.clockings
   where employee_id = p_employee_id
+    and type in ('in', 'out')
   order by clocked_at desc
   limit 1;
 
