@@ -21,6 +21,11 @@ function polar(index: number, r: number) {
   return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
 }
 
+function minutePos(m: number, r: number) {
+  const rad = ((m * 6 - 90) * Math.PI) / 180;
+  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+}
+
 export default function ClockTimePicker({
   hour,
   minute,
@@ -47,7 +52,7 @@ export default function ClockTimePicker({
       ? h < 12
         ? polar(h, R_OUTER)
         : polar(h - 12, R_INNER)
-      : polar(m / 5, R_OUTER);
+      : minutePos(m, R_OUTER);
 
   const dx = target.x - CX;
   const dy = target.y - CY;
@@ -57,6 +62,17 @@ export default function ClockTimePicker({
     x: CX + (dx / dist) * lineLen,
     y: CY + (dy / dist) * lineLen,
   };
+
+  function handleFaceClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (view !== 'm') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - CX;
+    const y = e.clientY - rect.top - CY;
+    if (Math.sqrt(x * x + y * y) < 20) return;
+    const angle = Math.atan2(y, x) + Math.PI / 2;
+    const norm = angle < 0 ? angle + 2 * Math.PI : angle;
+    setM(Math.round((norm / (2 * Math.PI)) * 60) % 60);
+  }
 
   return (
     <div className="fixed inset-0 bg-stone-950/50 flex items-end md:items-center justify-center z-50">
@@ -94,6 +110,7 @@ export default function ClockTimePicker({
         <div
           className="relative mx-auto rounded-full bg-stone-200"
           style={{ width: SIZE, height: SIZE }}
+          onClick={handleFaceClick}
         >
           <svg
             className="absolute inset-0 z-0"
@@ -118,7 +135,7 @@ export default function ClockTimePicker({
               return (
                 <div key={i}>
                   <button
-                    onClick={() => { setH(i); setView('m'); }}
+                    onClick={(e) => { e.stopPropagation(); setH(i); setView('m'); }}
                     className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
                       h === i
                         ? 'bg-brand text-white'
@@ -129,7 +146,7 @@ export default function ClockTimePicker({
                     {i}
                   </button>
                   <button
-                    onClick={() => { setH(i + 12); setView('m'); }}
+                    onClick={(e) => { e.stopPropagation(); setH(i + 12); setView('m'); }}
                     className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
                       h === i + 12
                         ? 'bg-brand text-white'
@@ -149,7 +166,7 @@ export default function ClockTimePicker({
               return (
                 <button
                   key={i}
-                  onClick={() => setM(i * 5)}
+                  onClick={(e) => { e.stopPropagation(); setM(i * 5); }}
                   className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
                     m === i * 5
                       ? 'bg-brand text-white'
