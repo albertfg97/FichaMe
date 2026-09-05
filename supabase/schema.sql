@@ -4,26 +4,22 @@
 -- Ejecuta este script en el SQL Editor de Supabase.
 -- =============================================
 
--- Limpiar objetos existentes en orden inverso de dependencia
--- 1. Triggers (dependen de funciones)
+-- Limpiar objetos existentes en orden correcto de dependencia:
+-- 1. Triggers (referencian funciones y tablas)
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_employee_pin_hash on public.employees;
 
--- 2. Policies (dependen de funciones)
-drop policy if exists "Users view own profile" on public.profiles;
-drop policy if exists "Users update own profile" on public.profiles;
-drop policy if exists "Admins view all profiles" on public.profiles;
-drop policy if exists "Admins manage employees" on public.employees;
-drop policy if exists "Admins manage clockings" on public.clockings;
-drop policy if exists "Admins manage work shifts" on public.work_shifts;
-drop policy if exists "Authenticated users view work shifts" on public.work_shifts;
-drop policy if exists "Admins manage assigned shifts" on public.assigned_shifts;
-drop policy if exists "Authenticated users view assigned shifts" on public.assigned_shifts;
-drop policy if exists "Admins view pin attempts" on public.pin_attempts;
-drop policy if exists "Anyone view kiosk settings" on public.kiosk_settings;
-drop policy if exists "Admins manage kiosk settings" on public.kiosk_settings;
+-- 2. Tablas con CASCADE (CASCADE elimina también sus policies,
+--    rompiendo la dependencia policy -> is_admin() automáticamente)
+drop table if exists public.assigned_shifts cascade;
+drop table if exists public.work_shifts cascade;
+drop table if exists public.clockings cascade;
+drop table if exists public.pin_attempts cascade;
+drop table if exists public.kiosk_settings cascade;
+drop table if exists public.employees cascade;
+drop table if exists public.profiles cascade;
 
--- 3. Funciones (CASCADE elimina policies dependientes)
+-- 3. Funciones con CASCADE (ya sin dependientes, CASCADE por seguridad)
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.hash_employee_pin() cascade;
 drop function if exists public.verify_pin(text) cascade;
@@ -32,15 +28,6 @@ drop function if exists public.get_last_clocking(uuid) cascade;
 drop function if exists public.correct_clocking_time(uuid, timestamptz, uuid) cascade;
 drop function if exists public.get_daily_overview(date) cascade;
 drop function if exists public.is_admin() cascade;
-
--- 4. Tablas
-drop table if exists public.assigned_shifts cascade;
-drop table if exists public.work_shifts cascade;
-drop table if exists public.clockings cascade;
-drop table if exists public.pin_attempts cascade;
-drop table if exists public.kiosk_settings cascade;
-drop table if exists public.employees cascade;
-drop table if exists public.profiles cascade;
 
 -- Extensión para UUIDs y cifrado bcrypt
 create extension if not exists "pgcrypto" with schema extensions;
