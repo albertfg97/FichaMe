@@ -43,19 +43,30 @@ export default function AdminLayout({
   );
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) {
-        setStatus('anon');
-        return;
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          setProfile(null);
+          setStatus('anon');
+          return;
+        }
+        supabase.auth.getUser().then(async ({ data }) => {
+          if (!data.user) {
+            setProfile(null);
+            setStatus('anon');
+            return;
+          }
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+          if (profile) setProfile(profile);
+          setStatus('authed');
+        });
       }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-      if (profile) setProfile(profile);
-      setStatus('authed');
-    });
+    );
+    return () => authListener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
