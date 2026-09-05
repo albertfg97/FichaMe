@@ -166,10 +166,9 @@ export default function ClockingPage() {
 
   useEffect(() => {
     if (useCustomTime && !forgotMode) {
-      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-      setCustomDate(local.toISOString().slice(0, 10));
-      setCustomHour(local.getHours());
-      setCustomMinute(local.getMinutes());
+      setCustomDate(toDateStr(now));
+      setCustomHour(now.getHours());
+      setCustomMinute(now.getMinutes());
     } else if (
       useCustomTime &&
       forgotMode &&

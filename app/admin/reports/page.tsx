@@ -95,12 +95,13 @@ export default function ReportsPage() {
 
   function openEdit(c: FullClocking) {
     setEditingClocking(c);
-    const src = c.original_time || c.clocked_at;
-    const d = new Date(src);
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-    setEditDate(local.toISOString().slice(0, 10));
-    setEditHour(local.getHours());
-    setEditMinute(local.getMinutes());
+    const d = new Date(c.original_time || c.clocked_at);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setEditDate(`${year}-${month}-${day}`);
+    setEditHour(d.getHours());
+    setEditMinute(d.getMinutes());
     setShowTimePicker(false);
   }
 
