@@ -60,8 +60,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold capitalize">Inicio</h1>
-        <p className="text-slate-500 text-sm capitalize">{today}</p>
+        <h1 className="text-xl font-bold tracking-tight md:text-2xl capitalize dark:text-stone-50">
+          Inicio
+        </h1>
+        <p className="text-stone-500 text-sm capitalize dark:text-stone-400">
+          {today}
+        </p>
       </div>
 
       {loading ? (
@@ -69,7 +73,7 @@ export default function DashboardPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl h-28 animate-pulse bg-slate-100"
+              className="rounded-2xl h-28 animate-pulse bg-stone-100 dark:bg-stone-900"
             />
           ))}
         </div>
@@ -88,21 +92,21 @@ export default function DashboardPage() {
               value={overview.clocked_in}
               sub="fichajes de hoy"
               Icon={IconLogout}
-              accent="bg-emerald-50 text-emerald-600"
+              accent="bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
             />
             <StatCard
               label="Salidas"
               value={overview.clocked_out}
               sub="fichajes de hoy"
               Icon={IconLogout2}
-              accent="bg-rose-50 text-rose-600"
+              accent="bg-rose-100/70 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400"
             />
             <StatCard
               label="Pendientes"
               value={overview.pending}
               sub="sin fichar"
               Icon={IconClockHour4}
-              accent="bg-amber-50 text-amber-600"
+              accent="bg-amber-100/70 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
             />
           </div>
         )
@@ -110,23 +114,29 @@ export default function DashboardPage() {
 
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Actividad reciente</h2>
-          <IconArrowUpRight size={20} className="text-slate-300" stroke={2} />
+          <h2 className="text-base font-semibold tracking-tight dark:text-stone-100">
+            Actividad reciente
+          </h2>
+          <IconArrowUpRight
+            size={20}
+            className="text-stone-300 dark:text-stone-600"
+            stroke={2}
+          />
         </div>
         {recentClockings.length === 0 ? (
-          <p className="text-sm text-slate-500 py-4 text-center">
+          <p className="text-sm text-stone-500 py-4 text-center dark:text-stone-400">
             Cuando los empleados fichan, lo verás aquí.
           </p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {recentClockings.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                       c.type === 'in'
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : 'bg-rose-50 text-rose-600'
+                        ? 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        : 'bg-rose-100/70 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
                     }`}
                   >
                     {c.type === 'in' ? (
@@ -136,16 +146,16 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">
+                    <div className="text-sm font-medium truncate dark:text-stone-200">
                       {c.employee_name}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-stone-500 dark:text-stone-400">
                       {c.type === 'in' ? 'Entrada' : 'Salida'}
-                      {c.corrected_by && ' · Corregido'}
+                      {c.corrected_by ? ' · Corregido' : ''}
                     </div>
                   </div>
                 </div>
-                <div className="text-sm font-semibold text-slate-700 tabular-nums">
+                <div className="text-sm font-semibold font-mono tabular-nums text-stone-700 dark:text-stone-300">
                   {new Date(c.clocked_at).toLocaleTimeString('es-ES', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -174,16 +184,21 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4">
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${accent}`}
-      >
-        <Icon size={20} stroke={2} />
+    <div className="bg-white rounded-2xl border border-stone-200 p-4 dark:bg-stone-900 dark:border-stone-800">
+      <div className="flex items-start justify-between mb-2">
+        <div className="text-2xl font-bold font-mono tabular-nums dark:text-stone-100">
+          {value}
+        </div>
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center ${accent}`}
+        >
+          <Icon size={18} stroke={2} />
+        </div>
       </div>
-      <div className="text-3xl font-bold tabular-nums">{value}</div>
-      <div className="text-xs text-slate-500 mt-1">
-        {label} · {sub}
+      <div className="text-sm font-medium text-stone-500 dark:text-stone-400">
+        {label}
       </div>
+      <div className="text-xs text-stone-500 dark:text-stone-500">{sub}</div>
     </div>
   );
 }

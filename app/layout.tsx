@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Toaster } from 'react-hot-toast';
 import ServiceWorkerRegistry from '@/components/ServiceWorkerRegistry';
 import './globals.css';
@@ -24,7 +25,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#4F46E5',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FBFAF7' },
+    { media: '(prefers-color-scheme: dark)', color: '#0C0A09' },
+  ],
 };
 
 export default function RootLayout({
@@ -33,8 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('fichame-theme');if(t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`,
+          }}
+        />
         {children}
         <Toaster
           position="top-center"
@@ -44,6 +55,7 @@ export default function RootLayout({
               fontSize: '1rem',
               borderRadius: '0.75rem',
               padding: '0.75rem 1rem',
+              fontFamily: "'Geist', system-ui, sans-serif",
             },
           }}
         />

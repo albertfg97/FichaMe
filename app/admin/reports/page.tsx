@@ -169,8 +169,8 @@ export default function ReportsPage() {
       head: [['Empleado', 'Tipo', 'Fecha y hora', 'Corregido']],
       body: exportRows,
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-      alternateRowStyles: { fillColor: [241, 245, 249] },
+      headStyles: { fillColor: [31, 122, 80], textColor: 255 },
+      alternateRowStyles: { fillColor: [244, 241, 234] },
     });
     doc.save(`${exportFilename}.pdf`);
   }
@@ -194,8 +194,10 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Reportes</h1>
-          <p className="text-slate-500 text-sm">
+          <h1 className="text-xl font-bold tracking-tight md:text-2xl dark:text-stone-50">
+            Reportes
+          </h1>
+          <p className="text-stone-500 text-sm dark:text-stone-400">
             Filtra por fecha y empleado
           </p>
         </div>
@@ -213,15 +215,15 @@ export default function ReportsPage() {
           {exportOpen && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setExportOpen(false)} />
-              <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-30 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-stone-200 shadow-lift z-30 overflow-hidden dark:bg-stone-900 dark:border-stone-700">
                 <button
                   onClick={() => {
                     exportCSV();
                     setExportOpen(false);
                   }}
-                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-stone-50 text-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
                 >
-                  <IconFileTypeCsv size={18} stroke={2} className="text-emerald-600" />
+                  <IconFileTypeCsv size={18} stroke={2} className="text-emerald-600 dark:text-emerald-400" />
                   CSV
                 </button>
                 <button
@@ -229,9 +231,9 @@ export default function ReportsPage() {
                     exportXLSX();
                     setExportOpen(false);
                   }}
-                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-stone-50 text-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
                 >
-                  <IconFileSpreadsheet size={18} stroke={2} className="text-green-600" />
+                  <IconFileSpreadsheet size={18} stroke={2} className="text-green-600 dark:text-green-400" />
                   Excel (XLSX)
                 </button>
                 <button
@@ -239,9 +241,9 @@ export default function ReportsPage() {
                     exportPDF();
                     setExportOpen(false);
                   }}
-                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-stone-50 text-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
                 >
-                  <IconFileTypePdf size={18} stroke={2} className="text-rose-600" />
+                  <IconFileTypePdf size={18} stroke={2} className="text-rose-600 dark:text-rose-400" />
                   PDF
                 </button>
               </div>
@@ -291,15 +293,15 @@ export default function ReportsPage() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-slate-100 animate-pulse h-20" />
+            <div key={i} className="rounded-2xl bg-stone-100 animate-pulse h-20 dark:bg-stone-900" />
           ))}
         </div>
       ) : clockings.length === 0 ? (
         <div className="card text-center py-14">
-          <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-4">
-            <IconInbox size={30} className="text-slate-400" stroke={1.75} />
+          <div className="w-16 h-16 mx-auto rounded-full bg-stone-100 flex items-center justify-center mb-4 dark:bg-stone-800">
+            <IconInbox size={30} className="text-stone-400" stroke={1.75} />
           </div>
-          <p className="text-slate-500">
+          <p className="text-stone-500 dark:text-stone-400">
             No hay fichajes en el rango seleccionado
           </p>
         </div>
@@ -312,41 +314,45 @@ export default function ReportsPage() {
               return (
                 <div
                   key={c.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-4"
+                  className="bg-white rounded-2xl border border-stone-200 p-4 shadow-soft dark:bg-stone-900 dark:border-stone-800"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold text-slate-900 text-sm">
+                    <div className="font-semibold text-stone-900 text-sm dark:text-stone-100">
                       {c.employee_name}
                     </div>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                         c.type === 'in'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-rose-50 text-rose-700'
+                          ? 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                          : 'bg-rose-100/70 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
                       }`}
                     >
                       {c.type === 'in' ? 'Entrada' : 'Salida'}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <div className="text-sm text-slate-500">
-                      {date} ·{' '}
-                      <span className="font-semibold text-slate-700 tabular-nums">
-                        {time}
-                      </span>
+                    <div className="text-sm text-stone-500 dark:text-stone-400">
+                      {date}
                     </div>
-                    {c.corrected_by && (
-                      <span className="text-[11px] text-amber-600 font-medium">
+                    <div className="text-sm font-semibold font-mono tabular-nums text-stone-700 dark:text-stone-200">
+                      {time}
+                    </div>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    {c.corrected_by ? (
+                      <span className="text-[11px] text-amber-600 font-medium dark:text-amber-400">
                         Corregido
                       </span>
+                    ) : (
+                      <span />
                     )}
+                    <button
+                      onClick={() => openEdit(c)}
+                      className="text-sm font-medium text-brand inline-flex items-center gap-1.5"
+                    >
+                      <IconPencil size={15} stroke={2} /> Corregir hora
+                    </button>
                   </div>
-                  <button
-                    onClick={() => openEdit(c)}
-                    className="mt-3 w-full py-2.5 rounded-xl text-sm font-medium bg-brand/10 text-brand active:scale-95 transition-transform inline-flex items-center justify-center gap-1.5"
-                  >
-                    <IconPencil size={16} stroke={2} /> Corregir hora
-                  </button>
                 </div>
               );
             })}
@@ -355,69 +361,67 @@ export default function ReportsPage() {
           {/* Vista escritorio: tabla */}
           <div className="hidden md:block card overflow-hidden p-0">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
+              <table className="min-w-full divide-y divide-stone-200 dark:divide-stone-800">
+                <thead className="bg-stone-50 dark:bg-stone-900/60">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Empleado
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Tipo
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Fecha
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Hora
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Estado
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider dark:text-stone-400">
                       Acción
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
+                <tbody className="bg-white divide-y divide-stone-100 dark:bg-stone-900 dark:divide-stone-800">
                   {clockings.map((c) => {
                     const { date, time } = formatDateTime(c.clocked_at);
                     return (
-                      <tr key={c.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 text-sm font-medium">
+                      <tr key={c.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/40">
+                        <td className="px-6 py-4 text-sm font-medium dark:text-stone-200">
                           {c.employee_name}
                         </td>
                         <td className="px-6 py-4">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               c.type === 'in'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-rose-50 text-rose-700'
+                                ? 'bg-emerald-100/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                                : 'bg-rose-100/70 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
                             }`}
                           >
                             {c.type === 'in' ? 'Entrada' : 'Salida'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-700">
+                        <td className="px-6 py-4 text-sm text-stone-700 dark:text-stone-300">
                           {date}
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-700 tabular-nums">
+                        <td className="px-6 py-4 text-sm font-mono tabular-nums text-stone-700 dark:text-stone-300">
                           {time}
                         </td>
                         <td className="px-6 py-4">
                           {c.corrected_by ? (
-                            <span className="text-xs text-amber-600 font-medium">
+                            <span className="text-xs text-amber-600 font-medium dark:text-amber-400">
                               Corregido
                             </span>
                           ) : (
-                            <span className="text-xs text-slate-400">
-                              Normal
-                            </span>
+                            <span className="text-xs text-stone-500">Normal</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
                           <button
                             onClick={() => openEdit(c)}
-                            className="text-sm text-brand hover:text-brand-dark font-medium inline-flex items-center gap-1"
+                            className="text-sm text-brand font-medium inline-flex items-center gap-1"
                           >
                             <IconPencil size={15} stroke={2} /> Corregir hora
                           </button>
@@ -433,12 +437,14 @@ export default function ReportsPage() {
       )}
 
       {editingClocking && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50">
-          <div className="bg-white rounded-t-3xl md:rounded-xl shadow-xl w-full md:max-w-sm p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
-            <div className="md:hidden w-10 h-1 rounded-full bg-slate-200 mx-auto mb-4" />
-            <h2 className="text-lg font-bold mb-1">Corregir fichaje</h2>
-            <p className="text-sm text-slate-500 mb-4">
-              {editingClocking.employee_name} —{' '}
+        <div className="fixed inset-0 bg-stone-950/50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-lift w-full md:max-w-sm p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] dark:bg-stone-900">
+            <div className="md:hidden w-10 h-1 rounded-full bg-stone-200 mx-auto mb-4 dark:bg-stone-700" />
+            <h2 className="text-lg font-bold mb-1 tracking-tight dark:text-stone-50">
+              Corregir fichaje
+            </h2>
+            <p className="text-sm text-stone-500 mb-4 dark:text-stone-400">
+              {editingClocking.employee_name} ·{' '}
               {editingClocking.type === 'in' ? 'Entrada' : 'Salida'}
             </p>
 
@@ -449,7 +455,7 @@ export default function ReportsPage() {
               onChange={(e) => setEditValue(e.target.value)}
               className="input text-base"
             />
-            <p className="text-xs text-slate-400 mt-1.5 mb-4">
+            <p className="text-xs text-stone-500 mt-1.5 mb-4 dark:text-stone-400">
               Útil cuando al empleado se le olvidó fichar a tiempo.
             </p>
 

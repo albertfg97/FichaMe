@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import {
   IconArrowLeft,
+  IconBackspace,
   IconCheck,
   IconClock,
-  IconLogout,
+  IconLogin2,
+  IconLogout2,
   IconScan,
-  IconUserCircle,
   IconX,
 } from '@tabler/icons-react';
 
@@ -42,6 +43,15 @@ function formatCurrentDate(date: Date) {
     day: 'numeric',
     month: 'long',
   });
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 }
 
 export default function ClockingPage() {
@@ -180,22 +190,33 @@ export default function ClockingPage() {
 
   if (step === 'ready') {
     return (
-      <main className="min-h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center p-6">
+      <main className="relative overflow-hidden min-h-[100dvh] bg-paper flex flex-col items-center justify-center px-6">
+        <div
+          className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[34rem] h-[34rem] rounded-full bg-emerald-500/10 blur-3xl"
+          aria-hidden
+        />
         <div className="w-full max-w-xs text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-5">
-            <IconCheck size={40} className="text-emerald-600" stroke={2.5} />
+          <div
+            className="w-24 h-24 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-6"
+            style={{ animation: 'pop-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both' }}
+          >
+            <IconCheck size={44} className="text-emerald-700" stroke={2.5} />
           </div>
-          <h1 className="text-2xl font-bold mb-1">
+          <h1 className="text-3xl font-bold tracking-tight mb-1">
             {nextType === 'in' ? 'Entrada' : 'Salida'} registrada
           </h1>
-          <p className="text-slate-500 mb-6">
-            {employee?.name} ·{' '}
+          <p className="text-stone-500 mb-8">
+            {employee?.name}
+            <span className="mx-2 text-stone-300">-</span>
             {new Date().toLocaleTimeString('es-ES', {
               hour: '2-digit',
               minute: '2-digit',
             })}
           </p>
-          <button onClick={resetPage} className="btn-primary w-full py-3">
+          <button
+            onClick={resetPage}
+            className="w-full py-4 rounded-full bg-brand text-white text-lg font-semibold shadow-soft active:scale-[0.98] transition-transform"
+          >
             Fichar otro empleado
           </button>
         </div>
@@ -205,18 +226,25 @@ export default function ClockingPage() {
 
   if (step === 'confirming' && employee) {
     return (
-      <main className="min-h-[100dvh] flex flex-col">
+      <main className="relative overflow-hidden min-h-[100dvh] bg-paper flex flex-col">
+        <div
+          className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[34rem] h-[34rem] rounded-full bg-brand/5 blur-3xl"
+          aria-hidden
+        />
         <div className="flex-1 flex flex-col justify-center px-6 pt-10 pb-4">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto rounded-full bg-brand/10 flex items-center justify-center mb-4">
-              <IconUserCircle size={44} className="text-brand" stroke={1.75} />
+          <div
+            className="text-center mb-8"
+            style={{ animation: 'fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}
+          >
+            <div className="w-20 h-20 mx-auto rounded-full bg-brand/10 text-brand flex items-center justify-center text-2xl font-bold mb-4">
+              {initials(employee.name)}
             </div>
-            <h1 className="text-2xl font-bold">{employee.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{employee.name}</h1>
             {employee.position && (
-              <p className="text-sm text-slate-500 mt-0.5">{employee.position}</p>
+              <p className="text-sm text-stone-500 mt-0.5">{employee.position}</p>
             )}
             {lastClockingAt && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-stone-500 mt-2">
                 Último fichaje:{' '}
                 {new Date(lastClockingAt).toLocaleTimeString('es-ES', {
                   hour: '2-digit',
@@ -227,29 +255,29 @@ export default function ClockingPage() {
           </div>
 
           <div className="text-center mb-6">
-            <div className="text-5xl font-bold tabular-nums text-slate-900">
+            <div className="text-5xl font-bold font-mono tabular-nums text-stone-900">
               {formatCurrentTime(now)}
             </div>
-            <div className="text-sm text-slate-500 mt-1 capitalize">
+            <div className="text-sm text-stone-500 mt-1 capitalize">
               {formatCurrentDate(now)}
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <div className="bg-white rounded-3xl border border-stone-200 shadow-soft p-4">
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className={`w-full py-5 rounded-xl text-xl font-bold text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+              className={`w-full py-5 rounded-full text-xl font-bold text-white flex items-center justify-center gap-2 shadow-soft active:scale-[0.98] transition-transform ${
                 nextType === 'in'
                   ? 'bg-emerald-600 active:bg-emerald-700'
                   : 'bg-rose-600 active:bg-rose-700'
               }`}
             >
-              <IconLogout
-                size={26}
-                stroke={2}
-                className={nextType === 'out' ? 'rotate-180' : ''}
-              />
+              {nextType === 'in' ? (
+                <IconLogin2 size={26} stroke={2.25} />
+              ) : (
+                <IconLogout2 size={26} stroke={2.25} />
+              )}
               {loading
                 ? 'Registrando...'
                 : nextType === 'in'
@@ -259,14 +287,14 @@ export default function ClockingPage() {
 
             <button
               onClick={() => setUseCustomTime(!useCustomTime)}
-              className={`mt-3 w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+              className={`mt-3 w-full py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
                 useCustomTime
                   ? 'bg-brand text-white'
-                  : 'bg-slate-100 text-slate-700'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200/70'
               }`}
             >
               <IconClock size={18} stroke={2} />
-              {useCustomTime ? 'Corrigiendo hora…' : 'Corregir hora'}
+              {useCustomTime ? 'Corrigiendo hora' : 'Corregir hora'}
             </button>
 
             {useCustomTime && (
@@ -277,7 +305,7 @@ export default function ClockingPage() {
                   onChange={(e) => setCustomTime(e.target.value)}
                   className="input text-base"
                 />
-                <p className="text-xs text-slate-400 mt-1.5 text-center">
+                <p className="text-xs text-stone-500 mt-2 text-center">
                   ¿Se te olvidó fichar? Ajusta la hora real.
                 </p>
               </div>
@@ -288,7 +316,7 @@ export default function ClockingPage() {
         <div className="pb-[max(env(safe-area-inset-bottom),1rem)] px-6">
           <button
             onClick={resetPage}
-            className="w-full py-3 text-sm text-slate-500 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+            className="w-full py-3 text-sm text-stone-500 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <IconArrowLeft size={16} stroke={2} /> No soy {employee.name}
           </button>
@@ -298,29 +326,38 @@ export default function ClockingPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-brand-dark to-brand pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1rem)]">
-      <div className="text-center px-4 mb-5">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur mb-3">
-          <IconScan size={30} className="text-white" stroke={1.75} />
+    <main className="relative overflow-hidden min-h-[100dvh] bg-paper flex flex-col pt-[max(env(safe-area-inset-top),2rem)] pb-[max(env(safe-area-inset-bottom),1rem)]">
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] rounded-full bg-brand/5 blur-3xl"
+        aria-hidden
+      />
+      {/* Marca y reloj */}
+      <div className="relative text-center px-4 mb-6">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand text-white shadow-soft mb-3">
+          <IconScan size={26} stroke={1.9} />
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">FichaMe</h1>
-        <p className="text-white/80 text-base mt-1">Introduce tu código para fichar</p>
+        <h1 className="text-3xl font-bold tracking-tight">FichaMe</h1>
+        <p className="text-stone-500 text-base mt-1">
+          Introduce tu código para fichar
+        </p>
 
-        <div className="text-white/70 text-sm mt-4">
-          <div className="text-4xl font-bold text-white tabular-nums">
+        <div className="mt-5">
+          <div className="text-5xl font-bold font-mono tabular-nums text-brand">
             {formatCurrentTime(now)}
           </div>
-          <div className="mt-1 capitalize">{formatCurrentDate(now)}</div>
+          <div className="mt-1 text-stone-500 capitalize">{formatCurrentDate(now)}</div>
         </div>
       </div>
 
-      <div className="flex-1 flex items-end justify-center px-4">
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-5 mb-2">
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-500">
-                Tu código
-              </span>
+      {/* Teclado */}
+      <div className="relative flex-1 flex items-center justify-center px-4 pb-2">
+        <div
+          className="w-full max-w-sm bg-white rounded-3xl border border-stone-200 shadow-lift p-5"
+          style={{ animation: 'fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}
+        >
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-stone-500">Tu código</span>
               {pin.length > 0 && (
                 <button
                   onClick={() => setPin('')}
@@ -330,23 +367,24 @@ export default function ClockingPage() {
                 </button>
               )}
             </div>
-            <div className="flex justify-center gap-3" aria-label="PIN introducido">
+            <div
+              className="flex justify-center gap-4"
+              aria-label="PIN introducido"
+            >
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-14 flex-1 rounded-xl border-2 transition-all ${
-                    i < pin.length
-                      ? 'bg-brand border-brand shadow-md'
-                      : 'border-slate-300 bg-slate-50'
+                  className={`h-3.5 w-3.5 rounded-full transition-all duration-200 ${
+                    i < pin.length ? 'bg-brand scale-110' : 'bg-stone-200'
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          <div className="grid gap-3" role="group">
+          <div className="grid gap-2.5" role="group">
             {numericKeypadRows.map((row, r) => (
-              <div key={r} className="grid grid-cols-3 gap-3">
+              <div key={r} className="grid grid-cols-3 gap-2.5">
                 {row.map((key) => {
                   const isClear = key === 'C';
                   const isDelete = key === '⌫';
@@ -358,16 +396,15 @@ export default function ClockingPage() {
                         else if (isDelete) setPin(pin.slice(0, -1));
                         else if (pin.length < 4) setPin(pin + key);
                       }}
-                      className={`h-16 rounded-2xl text-2xl font-semibold flex items-center justify-center active:scale-95 transition-transform select-none ${
-                        isClear
-                          ? 'text-slate-500 bg-slate-100 active:bg-slate-200'
-                          : isDelete
-                          ? 'text-slate-500 bg-slate-100 active:bg-slate-200'
-                          : 'bg-slate-100 text-slate-900 shadow-sm active:bg-brand active:text-white'
+                      aria-label={isDelete ? 'Borrar último dígito' : key}
+                      className={`h-[4.25rem] rounded-full text-2xl flex items-center justify-center select-none transition-colors active:scale-95 active:bg-brand active:text-white ${
+                        isClear || isDelete
+                          ? 'bg-stone-100 text-stone-500'
+                          : 'bg-stone-100 text-stone-900 font-semibold shadow-soft'
                       }`}
                     >
                       {isDelete ? (
-                        <span className="text-xl">⌫</span>
+                        <IconBackspace size={26} stroke={2} />
                       ) : (
                         key
                       )}
@@ -379,30 +416,32 @@ export default function ClockingPage() {
           </div>
 
           {lockSeconds > 0 && (
-            <div className="my-4 text-center text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">
+            <div className="mt-4 text-center text-sm text-rose-700 bg-rose-50 rounded-full px-4 py-2.5">
               Demasiados intentos fallidos. Inténtalo de nuevo en{' '}
-              <span className="font-semibold tabular-nums">{lockSeconds}s</span>
+              <span className="font-semibold font-mono tabular-nums">
+                {lockSeconds}s
+              </span>
             </div>
           )}
 
           <button
             onClick={handleVerifyPin}
             disabled={loading || pin.length < 3 || lockSeconds > 0}
-            className="mt-4 w-full py-4 rounded-2xl text-lg font-bold bg-brand text-white active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100"
+            className="mt-4 w-full py-4 rounded-full text-lg font-bold bg-brand text-white shadow-soft active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100"
           >
             {lockSeconds > 0
               ? `Espera ${lockSeconds}s`
               : loading
-              ? 'Verificando…'
+              ? 'Verificando'
               : 'Fichar'}
           </button>
         </div>
       </div>
 
-      <div className="text-center mt-4">
+      <div className="relative text-center mt-4">
         <Link
           href="/admin"
-          className="text-white/70 text-sm inline-flex items-center justify-center active:scale-95 transition-transform"
+          className="text-stone-500 text-sm inline-flex items-center justify-center active:scale-95 transition-transform"
         >
           Panel de administración
         </Link>

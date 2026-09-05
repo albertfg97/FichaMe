@@ -47,26 +47,28 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-50 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="min-h-[100dvh] bg-paper pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 dark:bg-stone-950">
       {/* Barra superior */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <header className="bg-white border-b border-stone-200 sticky top-0 z-20 dark:bg-stone-900 dark:border-stone-800">
         <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold text-sm">
+            <span className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold text-sm shadow-soft">
               F
             </span>
-            <span className="font-bold text-lg text-slate-900">FichaMe</span>
+            <span className="font-bold text-lg tracking-tight dark:text-stone-50">
+              FichaMe
+            </span>
           </div>
 
           <div className="flex items-center gap-3">
             <a
               href="/"
-              className="hidden sm:inline-flex text-sm text-slate-500 hover:text-slate-700 items-center gap-1"
+              className="hidden sm:inline-flex text-sm text-stone-500 hover:text-stone-700 items-center gap-1 dark:text-stone-400 dark:hover:text-stone-200"
             >
               <IconExternalLink size={16} stroke={2} /> Fichaje
             </a>
             {profile && (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-sm font-semibold">
                   {profile.full_name
                     .split(' ')
@@ -75,12 +77,14 @@ export default function AdminLayout({
                     .join('')
                     .toUpperCase()}
                 </div>
-                <span className="text-sm text-slate-700">{profile.full_name}</span>
+                <span className="text-sm text-stone-700 dark:text-stone-300">
+                  {profile.full_name}
+                </span>
               </div>
             )}
             <button
               onClick={handleLogout}
-              className="text-sm text-rose-600 hover:text-rose-700 font-medium inline-flex items-center gap-1.5 p-2"
+              className="text-sm text-rose-600 hover:text-rose-700 font-medium inline-flex items-center gap-1.5 p-2 dark:text-rose-400 dark:hover:text-rose-300"
               aria-label="Cerrar sesión"
             >
               <IconLogout size={20} stroke={2} />
@@ -91,8 +95,8 @@ export default function AdminLayout({
       </header>
 
       {/* Navegación escritorio */}
-      <nav className="hidden md:block max-w-5xl mx-auto px-4 -mt-0 pt-4">
-        <div className="inline-flex gap-1 bg-white rounded-xl border border-slate-200 p-1">
+      <nav className="hidden md:block max-w-5xl mx-auto px-4 pt-4">
+        <div className="inline-flex gap-1 bg-white rounded-xl border border-stone-200 p-1 shadow-soft dark:bg-stone-900 dark:border-stone-800">
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -103,7 +107,7 @@ export default function AdminLayout({
                 className={`px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors ${
                   active
                     ? 'bg-brand text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'
                 }`}
               >
                 <Icon size={18} stroke={2} />
@@ -118,8 +122,10 @@ export default function AdminLayout({
 
       {/* Bottom nav móvil */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-20 pb-[env(safe-area-inset-bottom)]"
-        style={{ boxShadow: '0 -1px 12px rgba(15,23,42,0.06)' }}
+        className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 z-20 pb-[env(safe-area-inset-bottom)] dark:bg-stone-900 dark:border-stone-800"
+        style={{
+          boxShadow: '0 -1px 12px rgba(28,25,23,0.06)',
+        }}
       >
         <div className="grid grid-cols-3">
           {navItems.map((item) => {
@@ -130,7 +136,9 @@ export default function AdminLayout({
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-                  active ? 'text-brand' : 'text-slate-400'
+                  active
+                    ? 'text-brand'
+                    : 'text-stone-500'
                 }`}
               >
                 <span
