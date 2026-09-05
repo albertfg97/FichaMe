@@ -95,7 +95,8 @@ export default function ReportsPage() {
 
   function openEdit(c: FullClocking) {
     setEditingClocking(c);
-    const d = new Date(c.clocked_at);
+    const src = c.original_time || c.clocked_at;
+    const d = new Date(src);
     const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
     setEditDate(local.toISOString().slice(0, 10));
     setEditHour(local.getHours());
@@ -114,6 +115,25 @@ export default function ReportsPage() {
 
     const timeStr = `${editDate}T${String(editHour).padStart(2, '0')}:${String(editMinute).padStart(2, '0')}`;
     const newISO = new Date(timeStr).toISOString();
+
+    // Si no hay cambios respecto a la hora precargada (original), no corregir
+    const loadedISO = new Date(editingClocking.original_time || editingClocking.clocked_at).toISOString();
+    const sameMinute = (a: string, b: string) => {
+      const da = new Date(a);
+      const db = new Date(b);
+      return (
+        da.getFullYear() === db.getFullYear() &&
+        da.getMonth() === db.getMonth() &&
+        da.getDate() === db.getDate() &&
+        da.getHours() === db.getHours() &&
+        da.getMinutes() === db.getMinutes()
+      );
+    };
+    if (sameMinute(newISO, loadedISO)) {
+      toast.success('No hay cambios que guardar');
+      setEditingClocking(null);
+      return;
+    }
 
     // La salida no puede ser anterior a su entrada precedente (ni en día ni en hora)
     if (editingClocking.type === 'out') {

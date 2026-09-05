@@ -161,11 +161,19 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                <div className="text-sm font-semibold font-mono tabular-nums text-stone-700 ">
-                  {new Date(c.clocked_at).toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-semibold font-mono tabular-nums text-stone-700 ">
+                    {new Date(c.clocked_at).toLocaleTimeString('es-ES', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                  <div className="text-xs text-stone-500 ">
+                    {new Date(c.clocked_at).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </div>
                 </div>
               </div>
             ))}
