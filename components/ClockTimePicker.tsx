@@ -15,6 +15,7 @@ const CX = SIZE / 2;
 const CY = SIZE / 2;
 const R_OUTER = 100;
 const R_INNER = 65;
+const INDICATOR_R = 10;
 
 function polar(index: number, r: number) {
   const rad = ((index * 30 - 90) * Math.PI) / 180;
@@ -26,17 +27,15 @@ function minutePos(m: number, r: number) {
   return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
 }
 
-function minuteFromEvent(
-  e: MouseEvent | Touch,
-  el: HTMLElement
-): number | null {
-  const rect = el.getBoundingClientRect();
-  const x = e.clientX - rect.left - CX;
-  const y = e.clientY - rect.top - CY;
+function minuteFromXY(x: number, y: number): number | null {
   if (Math.sqrt(x * x + y * y) < 15) return null;
   const angle = Math.atan2(y, x) + Math.PI / 2;
   const norm = angle < 0 ? angle + 2 * Math.PI : angle;
   return Math.round((norm / (2 * Math.PI)) * 60) % 60;
+}
+
+function tick() {
+  try { navigator.vibrate(10); } catch {}
 }
 
 export default function ClockTimePicker({
@@ -52,6 +51,7 @@ export default function ClockTimePicker({
 
   const faceRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const lastVibed = useRef(-1);
 
   const updateFromPointer = useCallback(
     (clientX: number, clientY: number) => {
@@ -59,10 +59,15 @@ export default function ClockTimePicker({
       const rect = faceRef.current.getBoundingClientRect();
       const x = clientX - rect.left - CX;
       const y = clientY - rect.top - CY;
-      if (Math.sqrt(x * x + y * y) < 15) return;
-      const angle = Math.atan2(y, x) + Math.PI / 2;
-      const norm = angle < 0 ? angle + 2 * Math.PI : angle;
-      setM(Math.round((norm / (2 * Math.PI)) * 60) % 60);
+      const val = minuteFromXY(x, y);
+      if (val === null) return;
+      setM((prev) => {
+        if (val !== prev && dragging.current) {
+          tick();
+          lastVibed.current = val;
+        }
+        return val;
+      });
     },
     [view]
   );
@@ -124,25 +129,35 @@ export default function ClockTimePicker({
     if (view !== 'm') return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragging.current = true;
-    const val = minuteFromEvent(
-      { clientX: e.clientX, clientY: e.clientY } as MouseEvent,
-      e.currentTarget
-    );
-    if (val !== null) setM(val);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - CX;
+    const y = e.clientY - rect.top - CY;
+    const val = minuteFromXY(x, y);
+    if (val !== null) {
+      setM(val);
+      tick();
+    }
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!dragging.current || view !== 'm') return;
-    const val = minuteFromEvent(
-      { clientX: e.clientX, clientY: e.clientY } as MouseEvent,
-      e.currentTarget
-    );
-    if (val !== null) setM(val);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - CX;
+    const y = e.clientY - rect.top - CY;
+    const val = minuteFromXY(x, y);
+    if (val !== null) {
+      setM((prev) => {
+        if (val !== prev) tick();
+        return val;
+      });
+    }
   }
 
   function handlePointerUp() {
     dragging.current = false;
   }
+
+  const indicator = minutePos(m, R_OUTER);
 
   return (
     <div className="fixed inset-0 bg-stone-950/50 flex items-end md:items-center justify-center z-50">
@@ -233,25 +248,40 @@ export default function ClockTimePicker({
               );
             })}
 
-          {view === 'm' &&
-            Array.from({ length: 12 }, (_, i) => {
-              const p = polar(i, R_OUTER);
-              return (
-                <button
-                  key={i}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setM(i * 5)}
-                  className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
-                    m === i * 5
-                      ? 'bg-brand text-white'
-                      : 'text-stone-900 hover:bg-stone-300/50'
-                  }`}
-                  style={{ left: p.x - 20, top: p.y - 20 }}
-                >
-                  {String(i * 5).padStart(2, '0')}
-                </button>
-              );
-            })}
+          {view === 'm' && (
+            <>
+              <div
+                className="absolute z-20 rounded-full bg-brand flex items-center justify-center"
+                style={{
+                  left: indicator.x - INDICATOR_R,
+                  top: indicator.y - INDICATOR_R,
+                  width: INDICATOR_R * 2,
+                  height: INDICATOR_R * 2,
+                }}
+              >
+                <div className="w-2 h-2 rounded-full bg-white" />
+              </div>
+
+              {Array.from({ length: 12 }, (_, i) => {
+                const p = polar(i, R_OUTER);
+                return (
+                  <button
+                    key={i}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setM(i * 5)}
+                    className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
+                      m === i * 5
+                        ? 'bg-brand text-white'
+                        : 'text-stone-900 hover:bg-stone-300/50'
+                    }`}
+                    style={{ left: p.x - 20, top: p.y - 20 }}
+                  >
+                    {String(i * 5).padStart(2, '0')}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
