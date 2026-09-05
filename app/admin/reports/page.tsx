@@ -113,10 +113,27 @@ export default function ReportsPage() {
     }
 
     const timeStr = `${editDate}T${String(editHour).padStart(2, '0')}:${String(editMinute).padStart(2, '0')}`;
+    const newISO = new Date(timeStr).toISOString();
+
+    // La salida no puede ser anterior a su entrada precedente (ni en día ni en hora)
+    if (editingClocking.type === 'out') {
+      const { data: prevIn } = await supabase
+        .from('clockings')
+        .select('clocked_at')
+        .eq('employee_id', editingClocking.employee_id)
+        .eq('type', 'in')
+        .lt('clocked_at', editingClocking.clocked_at)
+        .order('clocked_at', { ascending: false })
+        .limit(1);
+      if (prevIn && prevIn.length > 0 && new Date(newISO) <= new Date(prevIn[0].clocked_at)) {
+        toast.error('La salida no puede ser anterior a la entrada');
+        return;
+      }
+    }
 
     const { data, error } = await supabase.rpc('correct_clocking_time', {
       p_clocking_id: editingClocking.id,
-      p_new_time: new Date(timeStr).toISOString(),
+      p_new_time: newISO,
       p_admin_id: userData.user.id,
     });
 

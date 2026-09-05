@@ -170,6 +170,15 @@ export default function ClockingPage() {
       setCustomDate(local.toISOString().slice(0, 10));
       setCustomHour(local.getHours());
       setCustomMinute(local.getMinutes());
+    } else if (
+      useCustomTime &&
+      forgotMode &&
+      nextType === 'out' &&
+      lastClocking?.type === 'in' &&
+      lastClockingAt
+    ) {
+      // Festivo/fin de semana con salida pendiente: pre-rellenar la fecha con la de la entrada
+      setCustomDate(toDateStr(new Date(lastClockingAt)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCustomTime]);
@@ -262,6 +271,18 @@ export default function ClockingPage() {
               `${customDate}T${String(customHour).padStart(2, '0')}:${String(customMinute).padStart(2, '0')}`
             ).toISOString()
           : new Date().toISOString();
+
+      // La salida no puede ser anterior a la entrada pendiente (ni en día ni en hora)
+      if (
+        type === 'out' &&
+        lastClocking?.type === 'in' &&
+        lastClockingAt &&
+        new Date(clocked_at) <= new Date(lastClockingAt)
+      ) {
+        toast.error('La salida no puede ser anterior a la entrada');
+        setLoading(false);
+        return;
+      }
 
       const params: Record<string, unknown> = {
         p_employee_id: employee.id,
