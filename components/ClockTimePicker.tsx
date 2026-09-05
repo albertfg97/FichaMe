@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ClockTimePickerProps {
   hour: number;
@@ -26,6 +26,19 @@ function minutePos(m: number, r: number) {
   return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
 }
 
+function minuteFromEvent(
+  e: MouseEvent | Touch,
+  el: HTMLElement
+): number | null {
+  const rect = el.getBoundingClientRect();
+  const x = e.clientX - rect.left - CX;
+  const y = e.clientY - rect.top - CY;
+  if (Math.sqrt(x * x + y * y) < 15) return null;
+  const angle = Math.atan2(y, x) + Math.PI / 2;
+  const norm = angle < 0 ? angle + 2 * Math.PI : angle;
+  return Math.round((norm / (2 * Math.PI)) * 60) % 60;
+}
+
 export default function ClockTimePicker({
   hour,
   minute,
@@ -36,6 +49,50 @@ export default function ClockTimePicker({
   const [view, setView] = useState<'h' | 'm'>('h');
   const [h, setH] = useState(hour);
   const [m, setM] = useState(minute);
+
+  const faceRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const updateFromPointer = useCallback(
+    (clientX: number, clientY: number) => {
+      if (view !== 'm' || !faceRef.current) return;
+      const rect = faceRef.current.getBoundingClientRect();
+      const x = clientX - rect.left - CX;
+      const y = clientY - rect.top - CY;
+      if (Math.sqrt(x * x + y * y) < 15) return;
+      const angle = Math.atan2(y, x) + Math.PI / 2;
+      const norm = angle < 0 ? angle + 2 * Math.PI : angle;
+      setM(Math.round((norm / (2 * Math.PI)) * 60) % 60);
+    },
+    [view]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onMove(e: MouseEvent | TouchEvent) {
+      if (!dragging.current) return;
+      e.preventDefault();
+      const t = 'touches' in e ? e.touches[0] : e;
+      updateFromPointer(t.clientX, t.clientY);
+    }
+
+    function onUp() {
+      dragging.current = false;
+    }
+
+    window.addEventListener('mousemove', onMove, { passive: false });
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [open, updateFromPointer]);
 
   useEffect(() => {
     if (open) {
@@ -63,15 +120,28 @@ export default function ClockTimePicker({
     y: CY + (dy / dist) * lineLen,
   };
 
-  function handleFaceClick(e: React.MouseEvent<HTMLDivElement>) {
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (view !== 'm') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - CX;
-    const y = e.clientY - rect.top - CY;
-    if (Math.sqrt(x * x + y * y) < 20) return;
-    const angle = Math.atan2(y, x) + Math.PI / 2;
-    const norm = angle < 0 ? angle + 2 * Math.PI : angle;
-    setM(Math.round((norm / (2 * Math.PI)) * 60) % 60);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragging.current = true;
+    const val = minuteFromEvent(
+      { clientX: e.clientX, clientY: e.clientY } as MouseEvent,
+      e.currentTarget
+    );
+    if (val !== null) setM(val);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging.current || view !== 'm') return;
+    const val = minuteFromEvent(
+      { clientX: e.clientX, clientY: e.clientY } as MouseEvent,
+      e.currentTarget
+    );
+    if (val !== null) setM(val);
+  }
+
+  function handlePointerUp() {
+    dragging.current = false;
   }
 
   return (
@@ -108,9 +178,12 @@ export default function ClockTimePicker({
         </div>
 
         <div
-          className="relative mx-auto rounded-full bg-stone-200"
+          ref={faceRef}
+          className="relative mx-auto rounded-full bg-stone-200 touch-none select-none"
           style={{ width: SIZE, height: SIZE }}
-          onClick={handleFaceClick}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
         >
           <svg
             className="absolute inset-0 z-0"
@@ -166,7 +239,8 @@ export default function ClockTimePicker({
               return (
                 <button
                   key={i}
-                  onClick={(e) => { e.stopPropagation(); setM(i * 5); }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setM(i * 5)}
                   className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 transition-colors ${
                     m === i * 5
                       ? 'bg-brand text-white'
