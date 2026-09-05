@@ -3,19 +3,32 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
-import { IconDeviceFloppy, IconUpload, IconX } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconUpload, IconX, IconCheck } from '@tabler/icons-react';
 
 interface KioskSettings {
   title: string;
   subtitle: string;
   logo_url: string | null;
+  brand_color: string;
 }
+
+const PRESET_COLORS = [
+  { name: 'Verde', hex: '#1F7A50' },
+  { name: 'Azul', hex: '#2563EB' },
+  { name: 'Índigo', hex: '#4F46E5' },
+  { name: 'Púrpura', hex: '#7C3AED' },
+  { name: 'Rosa', hex: '#E11D48' },
+  { name: 'Naranja', hex: '#EA580C' },
+  { name: 'Turquesa', hex: '#0D9488' },
+  { name: 'Gris', hex: '#475569' },
+];
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<KioskSettings>({
     title: 'FichaMe',
     subtitle: 'Introduce tu código para fichar',
     logo_url: null,
+    brand_color: '#1F7A50',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,7 +37,7 @@ export default function SettingsPage() {
   useEffect(() => {
     supabase
       .from('kiosk_settings')
-      .select('title, subtitle, logo_url')
+      .select('title, subtitle, logo_url, brand_color')
       .eq('id', 1)
       .single()
       .then(({ data }) => {
@@ -37,7 +50,13 @@ export default function SettingsPage() {
     setSaving(true);
     const { error } = await supabase
       .from('kiosk_settings')
-      .update({ title: settings.title, subtitle: settings.subtitle, logo_url: settings.logo_url, updated_at: new Date().toISOString() })
+      .update({
+        title: settings.title,
+        subtitle: settings.subtitle,
+        logo_url: settings.logo_url,
+        brand_color: settings.brand_color,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', 1);
     setSaving(false);
     if (error) {
@@ -117,6 +136,51 @@ export default function SettingsPage() {
         </div>
 
         <div>
+          <label className="label">Color de marca</label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                onClick={() => setSettings((s) => ({ ...s, brand_color: c.hex }))}
+                className="relative w-10 h-10 rounded-xl transition-transform active:scale-95"
+                style={{ backgroundColor: c.hex }}
+                title={c.name}
+              >
+                {settings.brand_color === c.hex && (
+                  <IconCheck size={18} className="absolute inset-0 m-auto text-white" stroke={2.5} />
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="relative">
+              <input
+                type="color"
+                value={settings.brand_color}
+                onChange={(e) => setSettings((s) => ({ ...s, brand_color: e.target.value }))}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div
+                className="w-10 h-10 rounded-xl border-2 border-stone-200 cursor-pointer hover:border-stone-300 transition-colors"
+                style={{ backgroundColor: settings.brand_color }}
+              />
+            </label>
+            <input
+              type="text"
+              value={settings.brand_color}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
+                  setSettings((s) => ({ ...s, brand_color: v }));
+                }
+              }}
+              className="input flex-1 font-mono text-sm"
+              placeholder="#1F7A50"
+            />
+          </div>
+        </div>
+
+        <div>
           <label className="label">Logo</label>
           {settings.logo_url ? (
             <div className="flex items-center gap-4">
@@ -133,7 +197,7 @@ export default function SettingsPage() {
               </button>
             </div>
           ) : (
-            <label className="flex items-center justify-center gap-2 w-full py-8 rounded-xl border-2 border-dashed border-stone-200 text-stone-500 hover:border-brand hover:text-brand transition-colors cursor-pointer">
+            <label className="flex items-center justify-center gap-2 w-full py-8 rounded-xl border-2 border-dashed border-stone-200 text-stone-500 hover:border-stone-400 transition-colors cursor-pointer">
               <IconUpload size={18} stroke={2} />
               {uploading ? 'Subiendo...' : 'Subir imagen (max 512 KB)'}
               <input
@@ -145,9 +209,6 @@ export default function SettingsPage() {
               />
             </label>
           )}
-          <p className="text-xs text-stone-400 mt-1.5">
-            Se muestra en la pantalla de fichaje. Si no hay logo, se usa el icono por defecto.
-          </p>
         </div>
 
         <div className="pt-2">
@@ -172,12 +233,23 @@ export default function SettingsPage() {
               className="w-14 h-14 rounded-full mx-auto mb-3 object-cover"
             />
           ) : (
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand text-white shadow-soft mb-3 text-xl font-bold">
+            <div
+              className="inline-flex items-center justify-center w-14 h-14 rounded-full text-white shadow-soft mb-3 text-xl font-bold"
+              style={{ backgroundColor: settings.brand_color }}
+            >
               F
             </div>
           )}
           <h3 className="text-2xl font-bold tracking-tight">{settings.title || 'FichaMe'}</h3>
-          <p className="text-stone-500 text-sm mt-1">{settings.subtitle}</p>
+          <p className="text-sm mt-1" style={{ color: settings.brand_color }}>
+            {settings.subtitle}
+          </p>
+          <button
+            className="mt-4 px-6 py-2.5 rounded-xl text-white text-sm font-semibold shadow-soft"
+            style={{ backgroundColor: settings.brand_color }}
+          >
+            Botón de ejemplo
+          </button>
         </div>
       </div>
     </div>

@@ -139,6 +139,7 @@ create table if not exists public.kiosk_settings (
   title text not null default 'FichaMe',
   subtitle text not null default 'Introduce tu código para fichar',
   logo_url text,
+  brand_color text not null default '#1F7A50',
   updated_at timestamptz not null default now()
 );
 

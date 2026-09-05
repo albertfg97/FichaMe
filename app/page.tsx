@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { deriveBrand } from '@/lib/colors';
 import ClockTimePicker from '@/components/ClockTimePicker';
 import {
   IconArrowLeft,
@@ -73,18 +74,28 @@ export default function ClockingPage() {
     title: 'FichaMe',
     subtitle: 'Introduce tu código para fichar',
     logo_url: null as string | null,
+    brand_color: '#1F7A50',
   });
 
   useEffect(() => {
     supabase
       .from('kiosk_settings')
-      .select('title, subtitle, logo_url')
+      .select('title, subtitle, logo_url, brand_color')
       .eq('id', 1)
       .single()
       .then(({ data }) => {
         if (data) setKioskSettings(data);
       });
   }, []);
+
+  useEffect(() => {
+    const c = deriveBrand(kioskSettings.brand_color);
+    const root = document.documentElement;
+    root.style.setProperty('--brand', c.DEFAULT);
+    root.style.setProperty('--brand-dark', c.dark);
+    root.style.setProperty('--brand-light', c.light);
+    root.style.setProperty('--brand-muted', c.muted);
+  }, [kioskSettings.brand_color]);
 
   // Reloj en vivo para la pantalla principal
   useEffect(() => {

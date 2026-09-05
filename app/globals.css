@@ -51,6 +51,13 @@
 }
 
 @layer base {
+  :root {
+    --brand: #1F7A50;
+    --brand-dark: #175F3E;
+    --brand-light: #2E9B68;
+    --brand-muted: #7CBF9F;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
