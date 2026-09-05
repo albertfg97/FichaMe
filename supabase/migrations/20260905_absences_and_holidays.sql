@@ -43,6 +43,9 @@ create policy "Admins manage holidays"
   using (public.is_admin());
 
 -- 3. RPC create_clocking: soporta 'absence' + motivo
+-- Elimina la firma antigua (sin absence_reason) para evitar el conflicto PGRST203
+drop function if exists public.create_clocking(p_employee_id uuid, p_type text, p_clocked_at timestamptz) cascade;
+
 create or replace function public.create_clocking(
   p_employee_id uuid,
   p_type text,

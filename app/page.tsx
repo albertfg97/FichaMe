@@ -82,6 +82,7 @@ export default function ClockingPage() {
   const [showAbsencePicker, setShowAbsencePicker] = useState(false);
   const [lastType, setLastType] = useState<'in' | 'out' | 'absence'>('in');
   const [lastAbsenceReason, setLastAbsenceReason] = useState<AbsenceReason | null>(null);
+  const [lastSubmittedAt, setLastSubmittedAt] = useState<string | null>(null);
   const [kioskSettings, setKioskSettings] = useState({
     title: 'FichaMe',
     subtitle: 'Introduce tu código para fichar',
@@ -277,6 +278,7 @@ export default function ClockingPage() {
 
       setLastType(type);
       setLastAbsenceReason(reason ?? null);
+      setLastSubmittedAt(clocked_at);
       setLoading(false);
       setStep('ready');
     } catch (err) {
@@ -308,6 +310,7 @@ export default function ClockingPage() {
     setShowAbsencePicker(false);
     setForgotMode(false);
     setLastAbsenceReason(null);
+    setLastSubmittedAt(null);
     setLoading(false);
     setStep('pin');
   }
@@ -349,10 +352,25 @@ export default function ClockingPage() {
               </>
             )}
             <span className="mx-2 text-stone-300">-</span>
-            {new Date().toLocaleTimeString('es-ES', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {lastSubmittedAt
+              ? new Date(lastSubmittedAt).toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : new Date().toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+            {lastSubmittedAt &&
+              new Date(lastSubmittedAt).toDateString() !== new Date().toDateString() && (
+                <span className="text-stone-400">
+                  {' '}
+                  · {new Date(lastSubmittedAt).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </span>
+              )}
           </p>
           <button
             onClick={resetPage}
