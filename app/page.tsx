@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import ClockTimePicker from '@/components/ClockTimePicker';
 import {
   IconArrowLeft,
   IconBackspace,
@@ -60,7 +61,10 @@ export default function ClockingPage() {
   const [employee, setEmployee] = useState<LoadedEmployee | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastClocking, setLastClocking] = useState<{ type: 'in' | 'out' } | null>(null);
-  const [customTime, setCustomTime] = useState('');
+  const [customDate, setCustomDate] = useState('');
+  const [customHour, setCustomHour] = useState(0);
+  const [customMinute, setCustomMinute] = useState(0);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [useCustomTime, setUseCustomTime] = useState(false);
   const [now, setNow] = useState(new Date());
   const [lastClockingAt, setLastClockingAt] = useState<string | null>(null);
@@ -84,10 +88,10 @@ export default function ClockingPage() {
 
   useEffect(() => {
     if (useCustomTime) {
-      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      setCustomTime(local);
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      setCustomDate(local.toISOString().slice(0, 10));
+      setCustomHour(local.getHours());
+      setCustomMinute(local.getMinutes());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCustomTime]);
@@ -156,8 +160,10 @@ export default function ClockingPage() {
 
     try {
       const clocked_at =
-        useCustomTime && customTime
-          ? new Date(customTime).toISOString()
+        useCustomTime && customDate
+          ? new Date(
+              `${customDate}T${String(customHour).padStart(2, '0')}:${String(customMinute).padStart(2, '0')}`
+            ).toISOString()
           : new Date().toISOString();
 
       const { data, error } = await supabase.rpc('create_clocking', {
@@ -183,7 +189,10 @@ export default function ClockingPage() {
     setLastClocking(null);
     setLastClockingAt(null);
     setUseCustomTime(false);
-    setCustomTime('');
+    setCustomDate('');
+    setCustomHour(0);
+    setCustomMinute(0);
+    setShowTimePicker(false);
     setLoading(false);
     setStep('pin');
   }
@@ -298,14 +307,34 @@ export default function ClockingPage() {
             </button>
 
             {useCustomTime && (
-              <div className="mt-3">
+              <div className="mt-3 space-y-2">
                 <input
-                  type="datetime-local"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
                   className="input text-base"
                 />
-                <p className="text-xs text-stone-500 mt-2 text-center">
+                <button
+                  onClick={() => setShowTimePicker(true)}
+                  className="input text-base text-left flex items-center gap-2"
+                >
+                  <IconClock size={18} stroke={2} className="text-stone-400 shrink-0" />
+                  <span className="tabular-nums">
+                    {String(customHour).padStart(2, '0')}:{String(customMinute).padStart(2, '0')}
+                  </span>
+                </button>
+                <ClockTimePicker
+                  hour={customHour}
+                  minute={customMinute}
+                  open={showTimePicker}
+                  onChange={(hh, mm) => {
+                    setCustomHour(hh);
+                    setCustomMinute(mm);
+                    setShowTimePicker(false);
+                  }}
+                  onCancel={() => setShowTimePicker(false)}
+                />
+                <p className="text-xs text-stone-500 mt-1 text-center">
                   ¿Se te olvidó fichar? Ajusta la hora real.
                 </p>
               </div>

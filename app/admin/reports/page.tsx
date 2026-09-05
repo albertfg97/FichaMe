@@ -12,7 +12,9 @@ import {
   IconFileSpreadsheet,
   IconFileTypePdf,
   IconChevronDown,
+  IconClock,
 } from '@tabler/icons-react';
+import ClockTimePicker from '@/components/ClockTimePicker';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -29,7 +31,10 @@ export default function ReportsPage() {
   const [toDate, setToDate] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [editingClocking, setEditingClocking] = useState<FullClocking | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editHour, setEditHour] = useState(0);
+  const [editMinute, setEditMinute] = useState(0);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
@@ -90,14 +95,15 @@ export default function ReportsPage() {
   function openEdit(c: FullClocking) {
     setEditingClocking(c);
     const d = new Date(c.clocked_at);
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-    setEditValue(local);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    setEditDate(local.toISOString().slice(0, 10));
+    setEditHour(local.getHours());
+    setEditMinute(local.getMinutes());
+    setShowTimePicker(false);
   }
 
   async function handleSaveEdit() {
-    if (!editingClocking || !editValue) return;
+    if (!editingClocking || !editDate) return;
 
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
@@ -105,9 +111,11 @@ export default function ReportsPage() {
       return;
     }
 
+    const timeStr = `${editDate}T${String(editHour).padStart(2, '0')}:${String(editMinute).padStart(2, '0')}`;
+
     const { data, error } = await supabase.rpc('correct_clocking_time', {
       p_clocking_id: editingClocking.id,
-      p_new_time: new Date(editValue).toISOString(),
+      p_new_time: new Date(timeStr).toISOString(),
       p_admin_id: userData.user.id,
     });
 
@@ -448,12 +456,33 @@ export default function ReportsPage() {
               {editingClocking.type === 'in' ? 'Entrada' : 'Salida'}
             </p>
 
-            <label className="label">Nueva fecha y hora</label>
+            <label className="label">Nueva fecha</label>
             <input
-              type="datetime-local"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
               className="input text-base"
+            />
+            <label className="label mt-3">Nueva hora</label>
+            <button
+              onClick={() => setShowTimePicker(true)}
+              className="input text-base text-left flex items-center gap-2"
+            >
+              <IconClock size={18} stroke={2} className="text-stone-400 shrink-0" />
+              <span className="tabular-nums">
+                {String(editHour).padStart(2, '0')}:{String(editMinute).padStart(2, '0')}
+              </span>
+            </button>
+            <ClockTimePicker
+              hour={editHour}
+              minute={editMinute}
+              open={showTimePicker}
+              onChange={(hh, mm) => {
+                setEditHour(hh);
+                setEditMinute(mm);
+                setShowTimePicker(false);
+              }}
+              onCancel={() => setShowTimePicker(false)}
             />
             <p className="text-xs text-stone-500 mt-1.5 mb-4 ">
               Útil cuando al empleado se le olvidó fichar a tiempo.
