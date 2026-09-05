@@ -171,7 +171,7 @@ export default function AdminLayout({
           boxShadow: '0 -1px 12px rgba(28,25,23,0.06)',
         }}
       >
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-4">
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -179,18 +179,18 @@ export default function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
                   active
                     ? 'text-brand'
                     : 'text-stone-500'
                 }`}
               >
                 <span
-                  className={`w-10 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                  className={`w-9 h-6 rounded-md flex items-center justify-center transition-colors ${
                     active ? 'bg-brand/10' : ''
                   }`}
                 >
-                  <Icon size={22} stroke={active ? 2.4 : 2} />
+                  <Icon size={20} stroke={active ? 2.4 : 2} />
                 </span>
                 {item.label}
               </Link>
