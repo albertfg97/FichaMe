@@ -5,12 +5,17 @@
 -- =============================================
 
 -- Limpiar objetos existentes en orden correcto de dependencia:
+-- 0. Primero is_admin() con CASCADE: elimina de golpe todas sus policies
+--    dependientes (exactamente lo que pide el HINT del error),
+--    sin importar el estado en que esté la BD.
+drop function if exists public.is_admin() cascade;
+
 -- 1. Triggers (referencian funciones y tablas)
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_employee_pin_hash on public.employees;
 
 -- 2. Tablas con CASCADE (CASCADE elimina también sus policies,
---    rompiendo la dependencia policy -> is_admin() automáticamente)
+--    rompiendo la dependencia policy -> funciones automáticamente)
 drop table if exists public.assigned_shifts cascade;
 drop table if exists public.work_shifts cascade;
 drop table if exists public.clockings cascade;
@@ -19,7 +24,7 @@ drop table if exists public.kiosk_settings cascade;
 drop table if exists public.employees cascade;
 drop table if exists public.profiles cascade;
 
--- 3. Funciones con CASCADE (ya sin dependientes, CASCADE por seguridad)
+-- 3. Resto de funciones con CASCADE (is_admin ya no está)
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.hash_employee_pin() cascade;
 drop function if exists public.verify_pin(text) cascade;
@@ -27,7 +32,6 @@ drop function if exists public.create_clocking(uuid, text, timestamptz) cascade;
 drop function if exists public.get_last_clocking(uuid) cascade;
 drop function if exists public.correct_clocking_time(uuid, timestamptz, uuid) cascade;
 drop function if exists public.get_daily_overview(date) cascade;
-drop function if exists public.is_admin() cascade;
 
 -- Extensión para UUIDs y cifrado bcrypt
 create extension if not exists "pgcrypto" with schema extensions;
