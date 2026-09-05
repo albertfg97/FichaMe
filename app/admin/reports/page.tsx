@@ -4,7 +4,18 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import type { Clocking, Employee } from '@/lib/types';
-import { IconDownload, IconPencil, IconInbox } from '@tabler/icons-react';
+import {
+  IconDownload,
+  IconPencil,
+  IconInbox,
+  IconFileTypeCsv,
+  IconFileSpreadsheet,
+  IconFileTypePdf,
+  IconChevronDown,
+} from '@tabler/icons-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface FullClocking extends Clocking {
   employee_name: string;
@@ -19,6 +30,7 @@ export default function ReportsPage() {
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [editingClocking, setEditingClocking] = useState<FullClocking | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     const today = new Date();
@@ -110,27 +122,58 @@ export default function ReportsPage() {
     loadClockings();
   }
 
-  const exportCSV = useMemo(() => {
-    return () => {
-      const header = ['Empleado', 'Tipo', 'Fecha y hora', 'Corregido'];
-      const rows = clockings.map((c) => [
-        c.employee_name,
-        c.type === 'in' ? 'Entrada' : 'Salida',
-        new Date(c.clocked_at).toLocaleString('es-ES'),
-        c.corrected_by ? 'Sí' : 'No',
-      ]);
-      const csv = [header, ...rows]
-        .map((row) => row.map((cell) => `"${cell}"`).join(','))
-        .join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fichajes_${fromDate}_${toDate}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    };
-  }, [clockings, fromDate, toDate]);
+  const exportRows = useMemo(() => {
+    return clockings.map((c) => [
+      c.employee_name,
+      c.type === 'in' ? 'Entrada' : 'Salida',
+      new Date(c.clocked_at).toLocaleString('es-ES'),
+      c.corrected_by ? 'Sí' : 'No',
+    ]);
+  }, [clockings]);
+
+  const exportFilename = `fichajes_${fromDate}_${toDate}`;
+
+  function exportCSV() {
+    const header = ['Empleado', 'Tipo', 'Fecha y hora', 'Corregido'];
+    const csv = [header, ...exportRows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exportFilename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportXLSX() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Empleado', 'Tipo', 'Fecha y hora', 'Corregido'],
+      ...exportRows,
+    ]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
+    XLSX.writeFile(wb, `${exportFilename}.xlsx`);
+  }
+
+  function exportPDF() {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(14);
+    doc.text('FichaMe · Reporte de fichajes', 14, 16);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Periodo: ${fromDate} a ${toDate}`, 14, 22);
+    autoTable(doc, {
+      startY: 28,
+      head: [['Empleado', 'Tipo', 'Fecha y hora', 'Corregido']],
+      body: exportRows,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255 },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
+    });
+    doc.save(`${exportFilename}.pdf`);
+  }
 
   function formatDateTime(iso: string) {
     const d = new Date(iso);
@@ -156,14 +199,55 @@ export default function ReportsPage() {
             Filtra por fecha y empleado
           </p>
         </div>
-        <button
-          onClick={exportCSV}
-          className="btn-primary !px-3"
-          aria-label="Exportar CSV"
-        >
-          <IconDownload size={20} stroke={2.5} />
-          <span className="hidden sm:inline">CSV</span>
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setExportOpen(!exportOpen)}
+            className="btn-primary !px-3"
+            aria-label="Exportar"
+          >
+            <IconDownload size={20} stroke={2.5} />
+            <span className="hidden sm:inline">Exportar</span>
+            <IconChevronDown size={16} stroke={2.5} />
+          </button>
+
+          {exportOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setExportOpen(false)} />
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-30 overflow-hidden">
+                <button
+                  onClick={() => {
+                    exportCSV();
+                    setExportOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                >
+                  <IconFileTypeCsv size={18} stroke={2} className="text-emerald-600" />
+                  CSV
+                </button>
+                <button
+                  onClick={() => {
+                    exportXLSX();
+                    setExportOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                >
+                  <IconFileSpreadsheet size={18} stroke={2} className="text-green-600" />
+                  Excel (XLSX)
+                </button>
+                <button
+                  onClick={() => {
+                    exportPDF();
+                    setExportOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                >
+                  <IconFileTypePdf size={18} stroke={2} className="text-rose-600" />
+                  PDF
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="card !p-4">

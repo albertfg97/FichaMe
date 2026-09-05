@@ -31,10 +31,59 @@ create table if not exists public.employees (
   email text unique,
   phone text,
   position text default '',
-  pin text not null,              -- Código PIN numérico para fichar
+  pin text not null,              -- Código PIN numérico para fichar (se guarda como hash bcrypt)
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+-- =============================================
+-- TABLA: pin_attempts
+-- Registro de intentos de PIN para rate limiting
+-- anti fuerza bruta. Solo se accede desde la
+-- función security definer verify_pin().
+-- =============================================
+create table if not exists public.pin_attempts (
+  id bigint generated always as identity primary key,
+  attempted_at timestamptz not null default now(),
+  success boolean not null default false
+);
+
+-- Crea índices para el barrido de intentos recientes
+create index if not exists idx_pin_attempts_time
+  on public.pin_attempts (attempted_at);
+
+-- Hash del PIN en inserciones/actualizaciones.
+-- El PIN se guarda como hash bcrypt (pgcrypto) y jamás en texto plano.
+create or replace function public.hash_employee_pin()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if TG_OP = 'INSERT' or new.pin is distinct from old.pin then
+    -- Solo trata PINs en texto plano (no vuelve a hashear ya-hasheados)
+    if new.pin not like '$2%' then
+      -- Unicidad: verificar contra hashes existentes sin descifrarlos
+      if exists (
+        select 1 from public.employees e
+        where e.id is distinct from new.id
+          and e.pin = crypt(new.pin, e.pin)
+      ) then
+        raise exception using
+          errcode = '23505',
+          message = 'Ya existe un empleado con ese PIN';
+      end if;
+      new.pin := crypt(new.pin, gen_salt('bf'));
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_employee_pin_hash on public.employees;
+create trigger on_employee_pin_hash
+  before insert or update of pin on public.employees
+  for each row execute procedure public.hash_employee_pin();
 
 -- =============================================
 -- TABLA: clockings (fichajes)
@@ -87,6 +136,22 @@ alter table public.employees enable row level security;
 alter table public.clockings enable row level security;
 alter table public.work_shifts enable row level security;
 alter table public.assigned_shifts enable row level security;
+alter table public.pin_attempts enable row level security;
+
+-- Helper: comprueba si el usuario autenticado es admin.
+-- Corre con security definer para NO volver a aplicar RLS sobre profiles
+-- y así evitar la "infinite recursion detected in policy".
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
 
 -- Profiles: solo el usuario puede ver/editar su propio perfil; admins ven todos
 create policy "Users view own profile"
@@ -99,34 +164,22 @@ create policy "Users update own profile"
 
 create policy "Admins view all profiles"
   on public.profiles for select
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 -- Employees: solo admins pueden gestionar empleados
 create policy "Admins manage employees"
   on public.employees for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 -- Clockings: admins pueden gestionar todos los fichajes
 create policy "Admins manage clockings"
   on public.clockings for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 -- Work shifts: admins gestionan
 create policy "Admins manage work shifts"
   on public.work_shifts for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy "Authenticated users view work shifts"
   on public.work_shifts for select
@@ -134,14 +187,16 @@ create policy "Authenticated users view work shifts"
 
 create policy "Admins manage assigned shifts"
   on public.assigned_shifts for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy "Authenticated users view assigned shifts"
   on public.assigned_shifts for select
   using (auth.role() = 'authenticated');
+
+-- Pin attempts: solo admins ven el histórico de intentos
+create policy "Admins view pin attempts"
+  on public.pin_attempts for select
+  using (public.is_admin());
 
 -- =============================================
 -- TRIGGER: crear perfil automáticamente al registrarse
@@ -168,7 +223,9 @@ create trigger on_auth_user_created
 -- =============================================
 
 -- Verificar PIN de un empleado
--- Devuelve el empleado si el PIN es correcto y está activo
+-- Devuelve el empleado si el PIN es correcto y está activo.
+-- Comprime contra el hash bcrypt. Incluye rate limiting
+-- anti fuerza bruta: más de 8 fallos en 10 min bloquea 5 min.
 create or replace function public.verify_pin(
   p_pin text
 )
@@ -178,21 +235,49 @@ security definer set search_path = public
 as $$
 declare
   emp record;
+  failed_count int;
+  oldest_failure timestamptz;
+  retry_seconds int;
 begin
+  -- Limpieza básica del histórico
+  delete from public.pin_attempts
+  where attempted_at < now() - interval '1 day';
+
+  -- Rate limiting: cuenta fallos recientes
+  select count(*), min(attempted_at)
+  into failed_count, oldest_failure
+  from public.pin_attempts
+  where success = false
+    and attempted_at > now() - interval '10 minutes';
+
+  if failed_count >= 8 and oldest_failure is not null then
+    retry_seconds := greatest(
+      0,
+      600 - round(extract(epoch from (now() - oldest_failure)))
+    );
+    return json_build_object(
+      'error', 'too_many_attempts',
+      'retry_after', retry_seconds
+    );
+  end if;
+
   select * into emp
   from public.employees
-  where pin = p_pin and is_active = true
+  where is_active = true
+    and pin = crypt(p_pin, pin)
   limit 1;
 
   if not found then
-    return null;
+    insert into public.pin_attempts (success) values (false);
+    return json_build_object('error', 'invalid_pin');
   end if;
+
+  insert into public.pin_attempts (success) values (true);
 
   return json_build_object(
     'id', emp.id,
     'name', emp.name,
-    'position', emp.position,
-    'employee_code', emp.pin
+    'position', emp.position
   );
 end;
 $$;

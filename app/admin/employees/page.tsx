@@ -62,7 +62,7 @@ export default function EmployeesPage() {
       email: emp.email ?? '',
       phone: emp.phone ?? '',
       position: emp.position ?? '',
-      pin: emp.pin ?? '',
+      pin: '',
     });
     setShowModal(true);
   }
@@ -84,15 +84,16 @@ export default function EmployeesPage() {
     setSaving(true);
     try {
       if (editing) {
+        const updates: Record<string, unknown> = {
+          name: form.name.trim(),
+          email: form.email.trim() || null,
+          phone: form.phone.trim() || null,
+          position: form.position.trim() || '',
+        };
+        if (form.pin.trim()) updates.pin = form.pin.trim();
         const { error } = await supabase
           .from('employees')
-          .update({
-            name: form.name.trim(),
-            email: form.email.trim() || null,
-            phone: form.phone.trim() || null,
-            position: form.position.trim() || '',
-            pin: form.pin.trim(),
-          })
+          .update(updates)
           .eq('id', editing.id);
         if (error) throw error;
         toast.success('Empleado actualizado');
@@ -222,15 +223,6 @@ export default function EmployeesPage() {
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <div className="text-xs text-slate-500 flex items-center gap-2 min-w-0">
-                    <span>Código</span>
-                    <span className="font-mono text-sm bg-slate-100 px-2 py-0.5 rounded text-slate-800">
-                      {emp.pin}
-                    </span>
-                  </div>
-                </div>
-
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <button
                     onClick={() => openEdit(emp)}
@@ -272,9 +264,6 @@ export default function EmployeesPage() {
                     Puesto
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Código
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Estado
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -305,11 +294,6 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700">
                       {emp.position || '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
-                        {emp.pin}
-                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -404,19 +388,23 @@ export default function EmployeesPage() {
               </div>
 
               <div>
-                <label className="label">Código PIN para fichar *</label>
+                <label className="label">
+                  {editing ? 'Nuevo código PIN (opcional)' : 'Código PIN para fichar *'}
+                </label>
                 <input
                   value={form.pin}
                   onChange={(e) =>
                     setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })
                   }
                   className="input font-mono text-lg text-center tracking-[0.3em]"
-                  placeholder="••••"
+                  placeholder={editing ? 'Dejar en blanco para no cambiar' : '••••'}
                   maxLength={6}
                   inputMode="numeric"
                 />
                 <p className="text-xs text-slate-400 mt-1">
-                  El empleado usará este código en el teclado de fichaje
+                  {editing
+                    ? 'Si lo dejas vacío, el empleado conserva su código actual'
+                    : 'El empleado usará este código en el teclado de fichaje'}
                 </p>
               </div>
             </div>

@@ -26,6 +26,7 @@ Plataforma de fichaje para empleados similar a Bedott. Los empleados entran con 
 3. Abre el **SQL Editor** y pega el contenido de [`supabase/schema.sql`](supabase/schema.sql). Ejecútalo.
 4. Crea tu usuario administrador en **Authentication → Users → Add user** (email + contraseña).
 5. Tras crearlo, ve a la tabla `profiles` y cambia su `role` de `employee` a `admin`. *(Tras ejecutar el script verás su perfil creado automáticamente por el trigger).*
+6. *(Opcional, recomendado en producción)* Ejecuta el contenido de [`supabase/security_improvements.sql`](supabase/security_improvements.sql) para **cifrar los PIN** con bcrypt y activar el **rate limiting** anti fuerza bruta en el kiosco.
 
 ### 2. Configurar el proyecto
 
@@ -51,7 +52,7 @@ npm run dev
 | `/admin` | Login de administrador |
 | `/admin/dashboard` | Resumen del día (empleados, fichajes, pendientes) |
 | `/admin/employees` | Gestión de empleados (crear, editar PIN, activar/desactivar) |
-| `/admin/reports` | Historial de fichajes con filtros, exportación CSV y corrección de horas |
+| `/admin/reports` | Historial de fichajes con filtros, exportación CSV/XLSX/PDF y corrección de horas |
 
 ## PWA / Uso en móvil
 
@@ -79,7 +80,7 @@ powershell -ExecutionPolicy Bypass -File scripts\generate-icons.ps1
 
 ### Gestión de códigos
 
-Los códigos PIN se asignan en **Admin → Empleados**. Son numéricos (máx. 6 dígitos) y únicos. Si un empleado olvida su código, el admin puede verlo y cambiarlo desde el panel.
+Los códigos PIN se asignan en **Admin → Empleados**. Son numéricos (máx. 6 dígitos) y únicos. Si un empleado olvida su código, el admin puede **cambiarlo** desde el panel (se guardan cifrados, no se pueden consultar).
 
 ## Despliegue con Docker
 
@@ -105,14 +106,13 @@ Para usar con un dominio y HTTPS, añade Nginx/Caddy/Traefik apuntando al puerto
 
 ## Seguridad
 
-- Los PIN se almacenan en texto plano en la tabla `employees`. Para un uso real en producción se recomienda cifrarlos (ver sección de mejora abajo).
+- Los PIN se almacenan **cifrados** con bcrypt (`crypt` / `gen_salt('bf')`) vía un trigger en la tabla `employees`. Nunca se guardan en texto plano y no son legibles para el admin (solo puede restablecerlos).
+- **Rate limiting anti fuerza bruta**: `verify_pin()` bloquea el codigo durante 5 minutos tras 8 fallos en 10 minutos.
 - El fichaje público usa funciones RPC `security definer` para verificar PIN y registrar fichajes sin exponer la tabla de empleados.
 - Las tablas tienen **RLS habilitado**: solo admins pueden gestionar empleados/fichajes; el resto de accesos están restringidos por políticas.
+- La sesión de admin vive en el navegador (localStorage) y los datos están protegidos por RLS en Supabase.
 
 ## Mejoras sugeridas
 
-- Cifrar los PIN con bcrypt (los empleados los introducen, no hace falta descifrarlos).
-- Rate limiting en el teclado de PIN para evitar fuerza bruta.
 - Geolocalización o código de sede al fichar.
 - Notificaciones (email/Slack) de fichajes atípicos.
-- Exportación de reportes en PDF y XLSX.

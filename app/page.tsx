@@ -54,12 +54,23 @@ export default function ClockingPage() {
   const [useCustomTime, setUseCustomTime] = useState(false);
   const [now, setNow] = useState(new Date());
   const [lastClockingAt, setLastClockingAt] = useState<string | null>(null);
+  const [lockSeconds, setLockSeconds] = useState(0);
 
   // Reloj en vivo para la pantalla principal
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(t);
   }, []);
+
+  // Cuenta atrás del bloqueo por demasiados intentos
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+    const t = setInterval(
+      () => setLockSeconds((s) => Math.max(0, s - 1)),
+      1000
+    );
+    return () => clearInterval(t);
+  }, [lockSeconds > 0]);
 
   useEffect(() => {
     if (useCustomTime) {
@@ -76,6 +87,10 @@ export default function ClockingPage() {
       toast.error('Introduce tu código');
       return;
     }
+    if (lockSeconds > 0) {
+      toast.error(`Espera ${lockSeconds}s para volver a intentar`);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -85,16 +100,24 @@ export default function ClockingPage() {
 
       if (error) throw error;
 
-      if (!data) {
-        toast.error('Código incorrecto');
+      const result = data as { error?: string; retry_after?: number } | null;
+
+      if (!result || result.error) {
+        if (result?.error === 'too_many_attempts') {
+          const secs = Math.max(1, Math.ceil(result.retry_after ?? 1));
+          setLockSeconds(secs);
+          toast.error('Demasiados intentos. Inténtalo de nuevo en unos minutos');
+        } else {
+          toast.error('Código incorrecto');
+        }
         setPin('');
         return;
       }
 
-      setEmployee(data as LoadedEmployee);
+      setEmployee(result as unknown as LoadedEmployee);
 
       const { data: last } = await supabase.rpc('get_last_clocking', {
-        p_employee_id: (data as LoadedEmployee).id,
+        p_employee_id: (result as LoadedEmployee).id,
       });
 
       if (last && last.error !== 'no_clockings') {
@@ -355,12 +378,23 @@ export default function ClockingPage() {
             ))}
           </div>
 
+          {lockSeconds > 0 && (
+            <div className="my-4 text-center text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">
+              Demasiados intentos fallidos. Inténtalo de nuevo en{' '}
+              <span className="font-semibold tabular-nums">{lockSeconds}s</span>
+            </div>
+          )}
+
           <button
             onClick={handleVerifyPin}
-            disabled={loading || pin.length < 3}
+            disabled={loading || pin.length < 3 || lockSeconds > 0}
             className="mt-4 w-full py-4 rounded-2xl text-lg font-bold bg-brand text-white active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100"
           >
-            {loading ? 'Verificando…' : 'Fichar'}
+            {lockSeconds > 0
+              ? `Espera ${lockSeconds}s`
+              : loading
+              ? 'Verificando…'
+              : 'Fichar'}
           </button>
         </div>
       </div>
