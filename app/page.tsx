@@ -69,6 +69,22 @@ export default function ClockingPage() {
   const [now, setNow] = useState(new Date());
   const [lastClockingAt, setLastClockingAt] = useState<string | null>(null);
   const [lockSeconds, setLockSeconds] = useState(0);
+  const [kioskSettings, setKioskSettings] = useState({
+    title: 'FichaMe',
+    subtitle: 'Introduce tu código para fichar',
+    logo_url: null as string | null,
+  });
+
+  useEffect(() => {
+    supabase
+      .from('kiosk_settings')
+      .select('title, subtitle, logo_url')
+      .eq('id', 1)
+      .single()
+      .then(({ data }) => {
+        if (data) setKioskSettings(data);
+      });
+  }, []);
 
   // Reloj en vivo para la pantalla principal
   useEffect(() => {
@@ -95,6 +111,13 @@ export default function ClockingPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCustomTime]);
+
+  useEffect(() => {
+    if (pin.length === 4 && step === 'pin' && !loading && lockSeconds <= 0) {
+      handleVerifyPin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pin.length, step, loading, lockSeconds]);
 
   async function handleVerifyPin() {
     if (pin.length < 3) {
@@ -362,12 +385,20 @@ export default function ClockingPage() {
       />
       {/* Marca y reloj */}
       <div className="relative text-center px-4 mb-6">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand text-white shadow-soft mb-3">
-          <IconScan size={26} stroke={1.9} />
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight">FichaMe</h1>
+        {kioskSettings.logo_url ? (
+          <img
+            src={kioskSettings.logo_url}
+            alt="Logo"
+            className="w-14 h-14 rounded-full mx-auto mb-3 object-cover shadow-soft"
+          />
+        ) : (
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand text-white shadow-soft mb-3">
+            <IconScan size={26} stroke={1.9} />
+          </div>
+        )}
+        <h1 className="text-3xl font-bold tracking-tight">{kioskSettings.title}</h1>
         <p className="text-stone-500 text-base mt-1">
-          Introduce tu código para fichar
+          {kioskSettings.subtitle}
         </p>
 
         <div className="mt-5">
@@ -452,18 +483,6 @@ export default function ClockingPage() {
               </span>
             </div>
           )}
-
-          <button
-            onClick={handleVerifyPin}
-            disabled={loading || pin.length < 3 || lockSeconds > 0}
-            className="mt-4 w-full py-4 rounded-full text-lg font-bold bg-brand text-white shadow-soft active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100"
-          >
-            {lockSeconds > 0
-              ? `Espera ${lockSeconds}s`
-              : loading
-              ? 'Verificando'
-              : 'Fichar'}
-          </button>
         </div>
       </div>
 

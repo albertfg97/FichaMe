@@ -12,12 +12,14 @@ import {
   IconUsers,
   IconFileReport,
   IconExternalLink,
+  IconSettings,
 } from '@tabler/icons-react';
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Inicio', icon: IconChartBar },
   { href: '/admin/employees', label: 'Empleados', icon: IconUsers },
   { href: '/admin/reports', label: 'Reportes', icon: IconFileReport },
+  { href: '/admin/settings', label: 'Configuración', icon: IconSettings },
 ];
 
 function LoadingShell() {

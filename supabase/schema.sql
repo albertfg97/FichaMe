@@ -130,6 +130,22 @@ create table if not exists public.assigned_shifts (
 );
 
 -- =============================================
+-- TABLA: kiosk_settings
+-- Configuración visual del kiosco (título, logo).
+-- Solo existe una fila (id fijo = 1).
+-- =============================================
+create table if not exists public.kiosk_settings (
+  id int primary key default 1 check (id = 1),
+  title text not null default 'FichaMe',
+  subtitle text not null default 'Introduce tu código para fichar',
+  logo_url text,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.kiosk_settings (id) values (1)
+  on conflict (id) do nothing;
+
+-- =============================================
 -- RLS (Row Level Security)
 -- =============================================
 
@@ -139,6 +155,7 @@ alter table public.clockings enable row level security;
 alter table public.work_shifts enable row level security;
 alter table public.assigned_shifts enable row level security;
 alter table public.pin_attempts enable row level security;
+alter table public.kiosk_settings enable row level security;
 
 -- Helper: comprueba si el usuario autenticado es admin.
 -- Corre con security definer para NO volver a aplicar RLS sobre profiles
@@ -208,6 +225,17 @@ create policy "Authenticated users view assigned shifts"
 drop policy if exists "Admins view pin attempts" on public.pin_attempts;
 create policy "Admins view pin attempts"
   on public.pin_attempts for select
+  using (public.is_admin());
+
+-- Kiosk settings: anyone can read, solo admins pueden editar
+drop policy if exists "Anyone view kiosk settings" on public.kiosk_settings;
+create policy "Anyone view kiosk settings"
+  on public.kiosk_settings for select
+  using (true);
+
+drop policy if exists "Admins manage kiosk settings" on public.kiosk_settings;
+create policy "Admins manage kiosk settings"
+  on public.kiosk_settings for all
   using (public.is_admin());
 
 -- =============================================
