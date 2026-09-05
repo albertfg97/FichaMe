@@ -23,15 +23,15 @@ drop policy if exists "Admins view pin attempts" on public.pin_attempts;
 drop policy if exists "Anyone view kiosk settings" on public.kiosk_settings;
 drop policy if exists "Admins manage kiosk settings" on public.kiosk_settings;
 
--- 3. Funciones
-drop function if exists public.handle_new_user();
-drop function if exists public.hash_employee_pin();
-drop function if exists public.verify_pin(text);
-drop function if exists public.create_clocking(uuid, text, timestamptz);
-drop function if exists public.get_last_clocking(uuid);
-drop function if exists public.correct_clocking_time(uuid, timestamptz, uuid);
-drop function if exists public.get_daily_overview(date);
-drop function if exists public.is_admin();
+-- 3. Funciones (CASCADE elimina policies dependientes)
+drop function if exists public.handle_new_user() cascade;
+drop function if exists public.hash_employee_pin() cascade;
+drop function if exists public.verify_pin(text) cascade;
+drop function if exists public.create_clocking(uuid, text, timestamptz) cascade;
+drop function if exists public.get_last_clocking(uuid) cascade;
+drop function if exists public.correct_clocking_time(uuid, timestamptz, uuid) cascade;
+drop function if exists public.get_daily_overview(date) cascade;
+drop function if exists public.is_admin() cascade;
 
 -- 4. Tablas
 drop table if exists public.assigned_shifts cascade;
