@@ -172,6 +172,72 @@ export default function SettingsPage() {
         Configuración del kiosco
       </h1>
 
+      <div className="card max-w-lg mb-8">
+        <h2 className="font-semibold mb-3">Días festivos</h2>
+        <p className="text-sm text-stone-500 mb-4">
+          En estos días el kiosco no permitirá fichar.
+        </p>
+
+        <div className="space-y-2 mb-4">
+          {holidays.length === 0 ? (
+            <p className="text-sm text-stone-400 py-2">
+              No hay festivos configurados.
+            </p>
+          ) : (
+            holidays.map((h) => (
+              <div
+                key={h.date}
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-stone-50 border border-stone-200"
+              >
+                <div>
+                  <div className="text-sm font-medium ">{h.name}</div>
+                  <div className="text-xs text-stone-500">
+                    {new Date(`${h.date}T12:00:00`).toLocaleDateString('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteHoliday(h.date)}
+                  disabled={deletingHoliday === h.date}
+                  className="text-stone-400 hover:text-rose-600 transition-colors p-1.5"
+                  title="Eliminar festivo"
+                >
+                  <IconTrash size={17} stroke={2} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="date"
+            value={newHoliday.date}
+            onChange={(e) => setNewHoliday((h) => ({ ...h, date: e.target.value }))}
+            className="input sm:w-40"
+          />
+          <input
+            type="text"
+            value={newHoliday.name}
+            onChange={(e) => setNewHoliday((h) => ({ ...h, name: e.target.value }))}
+            className="input flex-1"
+            placeholder="Nombre del festivo (ej. Navidad)"
+          />
+          <button
+            onClick={handleAddHoliday}
+            disabled={addingHoliday}
+            className="btn-primary flex items-center justify-center gap-2"
+          >
+            <IconCalendarPlus size={17} stroke={2} />
+            {addingHoliday ? 'Añadiendo...' : 'Añadir'}
+          </button>
+        </div>
+      </div>
+
       <div className="card space-y-5 max-w-lg">
         <div>
           <label className="label">Título del kiosco</label>
@@ -279,72 +345,6 @@ export default function SettingsPage() {
           >
             <IconDeviceFloppy size={18} stroke={2} />
             {saving ? 'Guardando...' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-8 card max-w-lg">
-        <h2 className="font-semibold mb-3">Días festivos</h2>
-        <p className="text-sm text-stone-500 mb-4">
-          En estos días el kiosco no permitirá fichar.
-        </p>
-
-        <div className="space-y-2 mb-4">
-          {holidays.length === 0 ? (
-            <p className="text-sm text-stone-400 py-2">
-              No hay festivos configurados.
-            </p>
-          ) : (
-            holidays.map((h) => (
-              <div
-                key={h.date}
-                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-stone-50 border border-stone-200"
-              >
-                <div>
-                  <div className="text-sm font-medium ">{h.name}</div>
-                  <div className="text-xs text-stone-500">
-                    {new Date(`${h.date}T12:00:00`).toLocaleDateString('es-ES', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeleteHoliday(h.date)}
-                  disabled={deletingHoliday === h.date}
-                  className="text-stone-400 hover:text-rose-600 transition-colors p-1.5"
-                  title="Eliminar festivo"
-                >
-                  <IconTrash size={17} stroke={2} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="date"
-            value={newHoliday.date}
-            onChange={(e) => setNewHoliday((h) => ({ ...h, date: e.target.value }))}
-            className="input sm:w-40"
-          />
-          <input
-            type="text"
-            value={newHoliday.name}
-            onChange={(e) => setNewHoliday((h) => ({ ...h, name: e.target.value }))}
-            className="input flex-1"
-            placeholder="Nombre del festivo (ej. Navidad)"
-          />
-          <button
-            onClick={handleAddHoliday}
-            disabled={addingHoliday}
-            className="btn-primary flex items-center justify-center gap-2"
-          >
-            <IconCalendarPlus size={17} stroke={2} />
-            {addingHoliday ? 'Añadiendo...' : 'Añadir'}
           </button>
         </div>
       </div>
